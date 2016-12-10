@@ -71,7 +71,10 @@ export default class App extends Component {
       <div id="container" className={menuOpen ? 'menu-open' : ''}>
         <Header {...this.props} />
 
-        <div id="content-container" className="jumbotron">
+        <div
+          id="content-container"
+          className="jumbotron container"
+        >
             {children}
         </div>
       </div>
