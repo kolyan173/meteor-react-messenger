@@ -2,18 +2,26 @@ import React, { Component, PropTypes } from 'react';
 import { update } from '../../../api/users/methods.js';
 import InlineEdit from '../../components/InlineEdit/InlineEdit.jsx';
 import Select from 'react-select';
+import PageHeader from '../../components/PageHeader/PageHeader.js';
 import countriesList from 'country-list';
+import { UserFormHoc } from '../../HOCs/UserFormHoc.js';
 
 const { object } = PropTypes;
-const countries = countriesList().getNames();
-const fieldNames = [
-  'email',
-  'firstName',
-  'lastName',
-  'location'
-];
 
+@UserFormHoc
 export default class Profile extends Component {
+  countries = countriesList().getNames()
+                      .map((item) => ({
+                        value: item.toLowerCase(),
+                        label: item
+                      }))
+
+  fieldNames = [
+    'email',
+    'username',
+    'location'
+  ]
+
   static propTypes = {
     user: object
   }
@@ -21,36 +29,28 @@ export default class Profile extends Component {
   constructor(props) {
     super(props);
 
-    const fields = fieldNames.reduce((prev, curr) =>  {
-      prev[curr] = '';
+    this.fieldNames.forEach((item) => this[item] = '');
 
-      return prev;
-    }, {});
-
-    this.state = Object.assign({
+    this.state = {
+      errors: {},
       isEditable: false,
-      countries: countries.map((item) => ({
-        value: item.toLowerCase(),
-        label: item
-      }))
-    }, fields);
+      location: ''
+    };
   }
 
   componentWillReceiveProps(newProps) {
     const { user } = newProps;
 
     if (user && !_.isEqual(user, this.props.user)) {
-      const fields = fieldNames.reduce((prev, curr) =>  {
-        const userProp = this.getUserProp(curr, user);
+      this.fieldNames.forEach((item) =>  {
+        const userProp = this.getUserProp(item, user);
 
         if (userProp !== undefined) {
-          prev[curr] = userProp;
+          this[item] = userProp;
         }
+      });
 
-        return prev;
-      }, {});
-
-      this.setState(fields);
+      this.setState({ location: user.location });
     }
   }
 
@@ -59,24 +59,26 @@ export default class Profile extends Component {
   }
 
   handleSubmit = () => {
-    update(this.state.user);
+    const { user } = this.props;
+    const data = this.fieldNames.reduce((prev, curr) => {
+      const userNewProp = curr === 'location' ? this.state.location : this[curr];
+
+      if (this.getUserProp(curr) !== userNewProp) {
+        prev[curr] = userNewProp;
+      }
+
+      return prev;
+    }, {});
+    console.log(data);
+    // update(data);
   }
 
   handleResetChange = () => {
     const { user } = this.props;
-    const fields = fieldNames.reduce((prev, curr) =>  {
-      prev[curr] = this.getUserProp(curr);
 
-      return prev;
-    }, {});
+    this.fieldNames.forEach((item) => this[item] = this.getUserProp(item));
 
-    this.setState(
-      Object.assign(fields, { isEditable: false })
-    );
-  }
-
-  handleFieldChange = (data) => {
-    this.setState(data);
+    this.setState({ isEditable: false, location: user.location });
   }
 
   toggleEdit = (e) => {
@@ -87,19 +89,11 @@ export default class Profile extends Component {
 
   render() {
     const { messages } = this.props;
-    const {
-      email,
-      location,
-      firstName,
-      lastName,
-      isEditable
-    } = this.state;
+    const { isEditable, location } = this.state;
 
     return (
       <section className="profile">
-        <div className="page-header">
-          <h1>Profile</h1>
-        </div>
+          <PageHeader title="Profile" />
 
         <form
           className="profile-form"
@@ -107,41 +101,41 @@ export default class Profile extends Component {
         >
           <div className="form-group">
             <InlineEdit
-              text={email}
+              text={this.email}
+              editing={isEditable}
+              className="email"
               paramName="email"
               onChange={this.handleFieldChange}
-              className="email"
-              editing={isEditable}
+              onBlur={this.handleBlur}
+              fieldError={this.fieldError}
+              onError={this.handleError}
+              validate={this.validateEmail}
+              placeholder="Email address"
+              required
             />
           </div>
           <div className="form-group">
             <Select
               name="form-field-name"
               value={location}
-              options={this.state.countries}
+              options={this.countries}
               clearable={false}
               disabled={!isEditable}
-              onChange={(data) => { this.handleFieldChange({location: data.value}) }}
+              onChange={(data) => { this.handleFieldChange({location: data.value}, 'location') }}
             />
           </div>
           <div className="form-group">
             <InlineEdit
-              text={firstName}
-              staticElement="div"
-              paramName="firstName"
-              onChange={this.handleFieldChange}
-              className="firstName"
+              text={this.username}
               editing={isEditable}
-            />
-          </div>
-          <div className="form-group">
-            <InlineEdit
-              text={lastName}
-              staticElement="div"
-              paramName="lastName"
+              className="username"
+              paramName="username"
+              placeholder="username"
+              onBlur={this.handleBlur}
               onChange={this.handleFieldChange}
-              className="lastName"
-              editing={isEditable}
+              fieldError={this.fieldError}
+              onError={this.handleError}
+              validate={this.validateUsername}
             />
           </div>
 

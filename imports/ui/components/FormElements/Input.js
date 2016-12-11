@@ -1,32 +1,35 @@
 import React, { PropTypes } from 'react';
+import _ from 'lodash';
 
 const { string } = PropTypes;
 
 export const Input = (props) => {
+  const errorStatus = _.isUndefined(props.error)
+                    ? ''
+                    :  _.isNull(props.error) && 'has-success' || 'has-error';
+
   return (
-    <div className={`form-group ${props.error && 'has-error'}`}>
+    <div className={`form-group ${errorStatus}`}>
       <input
         className='form-control'
-        onBlur={handleBlur}
+        id={props.name}
         {..._.omit(props, ['error', 'validate', 'onError'])}
       />
+
+      {props.error &&
+        <span
+          id={props.name}
+          className="help-block">
+          {props.error}
+        </span>
+      }
     </div>
   );
-
-  function handleBlur() {
-    const { name } = props;
-    const errorMessage = props.validate(name);
-
-    if (errorMessage) {
-      props.onError({ [name]: errorMessage });
-    }
-  }
 };
 
 Input.propTypes = {
   type: string,
   name: string,
   placeholder: string,
-  classname: string,
-  fieldError: string
+  classname: string
 };

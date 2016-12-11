@@ -3,124 +3,102 @@ import { Accounts } from 'meteor/accounts-base';
 import { Input } from '../../components/FormElements/Input.js';
 import PageHeader from '../../components/PageHeader/PageHeader.js';
 import _ from 'lodash';
-import isPlainObject from 'lodash.isplainobject';
+import { capitalizeFirstLetter } from '../../utils.js';
+import { UserFormHoc } from '../../HOCs/UserFormHoc.js';
 
+@UserFormHoc
 export default class Signup extends Component {
-  state = { errors: {} };
-
-  handleFieldChange = (e) => {
-    const { target } = e;
-
-    this[target.name] = target.value;
+  constructor(props) {
+    super(props);
   }
 
-  handleError = (data) => {
-    this.setErrors(data);
-    console.log(data, this.state.errors);
-  }
-
-  setErrors(field, value) {
-    let data = { [field]: value };
-
-    if (isPlainObject(field)) {
-      data = field;
-    }
-
-    this.setState({ errors : Object.assign(this.state.errors, data) });
-  }
-
-  validatePassword = (name) => {
-    if (!this.password) { return 'This field is required'; }
-
-    if (this.password.length > 5) {
-      console.log(name, this.confirm);
-      if (name === 'confirm') {
-        if (this.password === this.confirm) {
-          return this.setErrors(name, null);
-        }
-
-        return 'Passwords mismatch';
-      }
-    } else {
-      return 'Password is too shirt. Minimum characters count is 6';
-    }
-  }
+  state = { errors: {} }
 
   onSubmit = (event) => {
-    debugger;
     event.preventDefault();
-    const email = this.email.value;
-    const password = this.password.value;
-    const confirm = this.confirm.value;
+
+    const fields = [
+      'email',
+      'password',
+      'confirm'
+    ];
     const errors = {};
 
-    if (!email) {
-      errors.email = i18n.__('pages.authPageJoin.emailRequired');
-    }
-    if (!password) {
-      errors.password = i18n.__('pages.authPageJoin.passwordRequired');
-    }
-    if (confirm !== password) {
-      errors.confirm = i18n.__('pages.authPageJoin.passwordConfirm');
-    }
-
-    this.setState({ errors });
-    if (Object.keys(errors).length) {
-      return;
-    }
-
-    Accounts.createUser({
-      email,
-      password,
-    }, (err) => {
-      if (err) {
-        this.setState({
-          errors: { none: err.reason },
-        });
+    fields.forEach((item) => {
+      if (!this[item]) {
+        errors[item] = 'This field is required';
+      } else if (this.state.errors[item]) {
+        return;
+      } else {
+        this.validateField(item);
       }
-      this.context.router.push('/');
     });
+
+
+    if (_.size(errors)) {
+      return this.setErrors(errors);
+    }
+    //
+    // Accounts.createUser({
+    //   email,
+    //   password,
+    // }, (err) => {
+    //   if (err) {
+    //     this.setState({
+    //       errors: { none: err.reason },
+    //     });
+    //   }
+    //   this.context.router.push('/');
+    // });
   }
 
   render() {
-    const { errors } = this.state;
-    const errorMessages = Object.keys(errors).map(key => errors[key]);
-    const fieldError = key => errors[key];
-
     return (
       <div className="signup">
         <PageHeader title="Signup" />
 
-        <form onSubmit={this.onSubmit}>
+        <form onSubmit={this.onSubmit} noValidate>
           <Input
-            error={fieldError('email')}
+            error={this.fieldError('email')}
+            onError={this.handleError}
             type="email"
             name="email"
+            validate={this.validateEmail}
             placeholder="Email address"
+            onBlur={this.handleBlur}
             onChange={this.handleFieldChange}
+            required
+            noValidate
           />
           <Input
-            error={fieldError('password')}
+            error={this.fieldError('password')}
             onError={this.handleError}
             type="password"
             name="password"
             placeholder="Password"
             validate={this.validatePassword}
+            onBlur={this.handleBlur}
             onChange={this.handleFieldChange}
             required
           />
           <Input
-            error={fieldError('confirm')}
+            error={this.fieldError('confirm')}
             onError={this.handleError}
             type="password"
             name="confirm"
-            placeholder="Password"
+            placeholder="Confirm password"
             validate={this.validatePassword}
+            onBlur={this.handleBlur}
             onChange={this.handleFieldChange}
+            required
           />
 
-          <button type="submit" className="btn-primary">
-            {i18n.__('pages.authPageJoin.joinNow')}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!this.isNoErrors()}
+          >
+            Signup
           </button>
         </form>
       </div>

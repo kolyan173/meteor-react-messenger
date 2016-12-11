@@ -1,4 +1,6 @@
 import React, { Component, PropTypes } from 'react';
+import { Input } from '../../components/FormElements/Input.js';
+import _ from 'lodash';
 
 const { bool, string, func } = PropTypes;
 
@@ -11,11 +13,11 @@ export default class InlineEdit extends Component {
     editing: bool
   };
 
-  handleChange = (e) => {
-    const { onChange, paramName } = this.props;
-
-    this.props.onChange({ [paramName]: e.target.value });
-  }
+  // handleChange = (e) => {
+  //   const { onChange, paramName } = this.props;
+  //
+  //   this.props.onChange({ [paramName]: e.target.value });
+  // }
 
   render() {
     const {
@@ -23,14 +25,21 @@ export default class InlineEdit extends Component {
       paramName,
       onChange,
       className,
-      editing
+      editing,
+      fieldError
     } = this.props;
 
     return editing
-      ? <input
+      ? <Input
             defaultValue={text}
-            ref={paramName}
-            onChange={this.handleChange}
+            // ref={paramName}
+            // onChange={this.handleChange}
+
+            error={fieldError(paramName)}
+            type={paramName}
+            name={paramName}
+            noValidate
+            {..._.omit(this.props, ['paramName', 'text', 'editing', 'fieldError'])}
         />
       : <div className={className}>{text}</div>
   }
