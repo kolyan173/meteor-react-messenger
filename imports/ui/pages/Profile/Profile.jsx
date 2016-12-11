@@ -1,9 +1,10 @@
-// import Meteor from 'meteor/meteor';
 import React, { Component, PropTypes } from 'react';
 import { update } from '../../../api/users/methods.js';
+import InlineEdit from '../../components/InlineEdit/InlineEdit.jsx';
 import Select from 'react-select';
 import countriesList from 'country-list';
 
+const { object } = PropTypes;
 const countries = countriesList().getNames();
 const fieldNames = [
   'email',
@@ -13,6 +14,10 @@ const fieldNames = [
 ];
 
 export default class Profile extends Component {
+  static propTypes = {
+    user: object
+  }
+
   constructor(props) {
     super(props);
 
@@ -36,7 +41,11 @@ export default class Profile extends Component {
 
     if (user && !_.isEqual(user, this.props.user)) {
       const fields = fieldNames.reduce((prev, curr) =>  {
-        prev[curr] = this.getUserProp(curr, user);
+        const userProp = this.getUserProp(curr, user);
+
+        if (userProp !== undefined) {
+          prev[curr] = userProp;
+        }
 
         return prev;
       }, {});
@@ -49,6 +58,10 @@ export default class Profile extends Component {
     return name === 'email' ? user.emails[0].address : user[name];
   }
 
+  handleSubmit = () => {
+    update(this.state.user);
+  }
+
   handleResetChange = () => {
     const { user } = this.props;
     const fields = fieldNames.reduce((prev, curr) =>  {
@@ -57,23 +70,13 @@ export default class Profile extends Component {
       return prev;
     }, {});
 
-    this.setState(fields)
+    this.setState(
+      Object.assign(fields, { isEditable: false })
+    );
   }
 
-  handleSendMessage = (e) => {
-    e.preventDefault();
-
-    // const user = Meteor.user();
-    //
-    // insert.call({
-    //   text: this.state.messageText,
-    //   authorId: user._id,
-    //   authorName: user.firstName + ' ' + user.lastName;
-    // });
-  }
-
-  handleFieldChange(field) {
-    this.setState({ [field]: this.refs[field].value.trim() });
+  handleFieldChange = (data) => {
+    this.setState(data);
   }
 
   toggleEdit = (e) => {
@@ -97,18 +100,18 @@ export default class Profile extends Component {
         <div className="page-header">
           <h1>Profile</h1>
         </div>
+
         <form
           className="profile-form"
-          onSubmit={this.handleSendMessage}
+          onSubmit={this.handleSubmit}
         >
           <div className="form-group">
-            <input
+            <InlineEdit
+              text={email}
+              paramName="email"
+              onChange={this.handleFieldChange}
               className="email"
-              type="text"
-              ref="email"
-              value={email}
-              onChange={this.handleFieldChange.bind(this, 'email')}
-              disabled={!isEditable}
+              editing={isEditable}
             />
           </div>
           <div className="form-group">
@@ -116,9 +119,32 @@ export default class Profile extends Component {
               name="form-field-name"
               value={location}
               options={this.state.countries}
+              clearable={false}
               disabled={!isEditable}
+              onChange={(data) => { this.handleFieldChange({location: data.value}) }}
             />
           </div>
+          <div className="form-group">
+            <InlineEdit
+              text={firstName}
+              staticElement="div"
+              paramName="firstName"
+              onChange={this.handleFieldChange}
+              className="firstName"
+              editing={isEditable}
+            />
+          </div>
+          <div className="form-group">
+            <InlineEdit
+              text={lastName}
+              staticElement="div"
+              paramName="lastName"
+              onChange={this.handleFieldChange}
+              className="lastName"
+              editing={isEditable}
+            />
+          </div>
+
           <input
             type="submit"
             className="btn btn-success"
