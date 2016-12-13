@@ -3,6 +3,10 @@ import { SimpleSchema } from 'meteor/aldeed:simple-schema';
 
 class MessagesCollection extends Mongo.Collection {
   insert(doc, callback) {
+    const user = Meteor.user();
+
+    doc.authorLocation = user.profile.location;
+    user.username && (doc.authorUsername = user.username);
     doc.createdAt || ( doc.createdAt = new Date() );
 
     return super.insert(doc, callback);
@@ -11,29 +15,18 @@ class MessagesCollection extends Mongo.Collection {
 
 export const Messages = new MessagesCollection('Messages');
 
-// Messages.deny({
-//   insert() { return true; },
-//   update() { return true; },
-//   remove() { return true; }
-// });
+Messages.deny({
+  insert() { return true; },
+  update() { return true; },
+  remove() { return true; },
+});
 
 Messages.schema = new SimpleSchema({
-  // id: {
-  //   type: String,
-  //   regEx: SimpleSchema.RegEx.Id
-  // },
-  text: {
-    type: String
-  },
-  createdAt: {
-    type: Date
-  },
-  authorId: {
-    type: String
-  },
-  authorName: {
-    type: String
-  }
+  text: { type: String },
+  createdAt: { type: Date },
+  authorId: { type: String },
+  authorLocation: { type: String },
+  authorUsername: { type: String, optional: true }
 });
 
 Messages.attachSchema(Messages.schema);

@@ -12,27 +12,23 @@ class UsersCollection extends Mongo.Collection {
 
 export const Users = new UsersCollection('Users');
 
-Users.schema = new SimpleSchema({
-  email: {
-    type: String
-  },
-  createdAt: {
-    type: Date
-  },
-  username: {
-    type: String,
-    optional: true
-  },
-  lastName: {
-    type: String,
-    optional: true
-  }
+Users.deny({
+  insert() { return true; },
+  update() { return true; },
+  remove() { return true; },
 });
 
-Users.attachSchema(Users.schema);
+Users.schema = {};
 
-Users.helpers({
-  fullName() {
-    return this.username + ' ' + this.lastName;
-  }
-})
+Users.schema.UserProfile = new SimpleSchema({
+  location: { type: String }
+});
+
+Users.schema.User = new SimpleSchema({
+  username: { type: String, optional: true },
+  emails: { type: [Object], optional: true },
+  createdAt: { type: Date },
+  profile: { type: Users.schema.UserProfile }
+});
+
+Users.attachSchema(Users.schema.User);

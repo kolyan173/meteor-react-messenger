@@ -4,6 +4,28 @@ import isPlainObject from 'lodash.isplainobject';
 export const UserFormHoc = ComposedComponent => class extends ComposedComponent {
   fieldError = key => this.state.errors[key];
 
+  proxySubmit = (e) => {
+    e.preventDefault();
+
+    const errors = {};
+
+    this.fields.forEach((item) => {
+      if (!this[item]) {
+        errors[item] = 'This field is required';
+      } else if (this.state.errors[item]) {
+        return;
+      } else {
+        this.validateField(item);
+      }
+    });
+
+    if (_.size(errors)) {
+      return this.setErrors(errors);
+    }
+    debugger
+    this.handleSubmit(e);
+  }
+
   validatePassword = (name) => {
     if (!this[name]) {
       return this.setErrors(name, 'This field is required');
@@ -36,7 +58,6 @@ export const UserFormHoc = ComposedComponent => class extends ComposedComponent 
     if (re.test(this.email)) {
       return this.setErrors('email', null);
     }
-
     return this.setErrors('email', 'Incorrect email');
   }
 

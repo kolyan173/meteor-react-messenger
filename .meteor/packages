@@ -23,9 +23,9 @@ session
 react-meteor-data
 twbs:bootstrap
 accounts-ui
-aldeed:simple-schema
 aldeed:collection2
 mdg:validated-method
 dburles:collection-helpers
 standard-minifier-css
 less
+aldeed:simple-schema

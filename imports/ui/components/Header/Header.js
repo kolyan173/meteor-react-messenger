@@ -26,6 +26,7 @@ export default class Header extends Component {
         <div className="navbar-collapse collapse">
           <ul className="nav navbar-nav">
             { !user && <li style={{padding: '10px 15px'}}><Auth /></li> }
+            { !user && <li><Link to="/signup">Signup</Link></li> }
             { user && <li><Link to="/profile">Profile</Link></li> }
           </ul>
         </div>

@@ -1,55 +1,68 @@
 import React, { Component } from 'react';
 import { Accounts } from 'meteor/accounts-base';
-import { Input } from '../../components/FormElements/Input.js';
+import Input from '../../components/FormElements/Input.jsx';
 import PageHeader from '../../components/PageHeader/PageHeader.js';
 import _ from 'lodash';
 import { capitalizeFirstLetter } from '../../utils.js';
-import { UserFormHoc } from '../../HOCs/UserFormHoc.js';
+import countriesList from 'country-list';
+// import { UserFormHoc } from '../../HOCs/UserFormHoc.js';
+import Form from '../../components/FormElements/Form.jsx';
 
-@UserFormHoc
 export default class Signup extends Component {
-  constructor(props) {
-    super(props);
+  static contextTypes = {
+    router: React.PropTypes.object,
   }
 
-  state = { errors: {} }
+  constructor(props) {
+    super(props);
 
-  onSubmit = (event) => {
-    event.preventDefault();
-
-    const fields = [
-      'email',
-      'password',
-      'confirm'
-    ];
-    const errors = {};
-
-    fields.forEach((item) => {
-      if (!this[item]) {
-        errors[item] = 'This field is required';
-      } else if (this.state.errors[item]) {
-        return;
-      } else {
-        this.validateField(item);
-      }
-    });
-
-
-    if (_.size(errors)) {
-      return this.setErrors(errors);
-    }
+    this.countries = countriesList().getNames()
+      .map((item) => ({
+        value: item.toLowerCase(),
+        label: item
+      })
+    );
     //
-    // Accounts.createUser({
-    //   email,
-    //   password,
-    // }, (err) => {
-    //   if (err) {
-    //     this.setState({
-    //       errors: { none: err.reason },
-    //     });
-    //   }
-    //   this.context.router.push('/');
-    // });
+    // this.fields = [
+    //   'email',
+    //   'password',
+    //   'confirm'
+    // ];
+  }
+
+  state = {
+    location: '',
+    isValid: false
+  }
+
+  submit = (data) => {
+    const options = {
+        email: data.email,
+        password: data.password,
+        profile: {
+            location: data.location
+        }
+    };
+
+    Accounts.createUser(options, (err) => {
+      if (err) { return console.error(err); }
+
+      this.context.router.push('/');
+    });
+  }
+
+  onValid = (data) => {
+    this.setState({ isValid: true });
+    console.log(data);
+  }
+
+  onInvalid = (data) => {
+    this.setState({ isValid: false });
+    console.log(data);
+  }
+
+  handleFieldChange = (e) => {
+    console.log(e.target.value);
   }
 
   render() {
@@ -57,50 +70,77 @@ export default class Signup extends Component {
       <div className="signup">
         <PageHeader title="Signup" />
 
-        <form onSubmit={this.onSubmit} noValidate>
+        <Form
+          onValidSubmit={this.submit}
+          onValid={this.onValid}
+          onInvalid={this.onInvalid}
+          className="profile-form"
+        >
           <Input
-            error={this.fieldError('email')}
-            onError={this.handleError}
-            type="email"
             name="email"
-            validate={this.validateEmail}
+            value={this.email || ''}
+            validations="isEmail"
+            validationErrors={{
+              isEmail: "Incorrect email"
+            }}
             placeholder="Email address"
-            onBlur={this.handleBlur}
-            onChange={this.handleFieldChange}
             required
-            noValidate
           />
           <Input
-            error={this.fieldError('password')}
-            onError={this.handleError}
-            type="password"
             name="password"
+            type="password"
+            value={this.password || ''}
+            validations={{
+              minLength: 6,
+              maxLength: 12
+            }}
+            validationErrors={{
+              minLength: 'Password is too shirt. Minimum is 6 characters',
+              maxLength: '"Password is too long. Maximim is 12 characters'
+            }}
             placeholder="Password"
-            validate={this.validatePassword}
-            onBlur={this.handleBlur}
-            onChange={this.handleFieldChange}
             required
           />
           <Input
-            error={this.fieldError('confirm')}
-            onError={this.handleError}
-            type="password"
             name="confirm"
+            value={this.confirm || ''}
+            type="password"
+            validations={{
+              equalsField: 'password',
+              minLength: 6,
+              maxLength: 12
+            }}
+            validationErrors={{
+              minLength: 'Password is too shirt. Minimum is 6 characters',
+              maxLength: '"Password is too long. Maximim is 12 characters',
+              equalsField: 'Passwords mismatch'
+            }}
             placeholder="Confirm password"
-            validate={this.validatePassword}
-            onBlur={this.handleBlur}
-            onChange={this.handleFieldChange}
+            required
+          />
+          <Input
+            type="select"
+            name="location"
+            value={this.location || ''}
+            validations={{
+              isExisty: true
+            }}
+            validationErrors={{
+              isExisty: 'Required field'
+            }}
+            options={this.countries}
+            placeholder="Choose location"
             required
           />
 
           <button
             type="submit"
-            className="btn btn-primary"
-            disabled={!this.isNoErrors()}
+            className="btn btn-primary btn-block"
+            // disabled={!this.isValid}
           >
             Signup
           </button>
-        </form>
+        </Form>
       </div>
     );
   }

@@ -12,7 +12,7 @@ export const insert = new ValidatedMethod({
   validate: new SimpleSchema({
     text: { type: String },
     authorId: { type: String },
-    authorName: { type: String }
+    authorUsername: { type: String }
   }).validator(),
 
   run(data) {

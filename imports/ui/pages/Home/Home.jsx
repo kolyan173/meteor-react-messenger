@@ -1,5 +1,7 @@
 import React, { Component, PropTypes } from 'react';
+import PageHeader from '../../components/PageHeader/PageHeader.js';
 import MessagesList from '../../components/Messages/MessagesList.jsx';
+import _ from 'lodash';
 import {
   insert,
   remove,
@@ -15,6 +17,8 @@ export default class Home extends Component {
 
   constructor(props) {
     super(props);
+
+    this.messageText = '';
   }
 
   state = {
@@ -22,48 +26,57 @@ export default class Home extends Component {
   }
 
   handleSendMessage = (e) => {
-    e.preventDefault();
+    this.setState({ shake: true });
+
+    setTimeout(() => {
+      this.setState({ shake: false });
+    }, 1e3);
+
+    const content = this.refs.msgText.value;
+
+    if (!content) { return; }
 
     const user = Meteor.user();
-    const authorName = user.firstName && user.firstName && user.firstName + ' ' + user.lastName;
 
     insert.call({
-      text: this.state.messageText,
+      text: content,
       authorId: user._id,
-      authorName
+      authorUsername: user.username || 'Anonymous'
     });
+
+    this.refs.msgText.value = '';
   }
 
-  handleType = (e) => {
-    this.setState({ messageText: e.target.value });
+  handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      this.handleSendMessage();
+    }
   }
 
   render() {
     const { messages } = this.props;
-    const { messageText } = this.state;
+    const { messageText } = this;
 
     return (
       <div className="messages">
-        <MessagesList messages={messages} />
+        <PageHeader title="Messenger"/>
 
-        <form
-          className="message-form"
-          onSubmit={this.handleSendMessage}
-        >
-          <div className="form-group">
-            <input
-              type="text"
-              value={messageText}
-              onChange={this.handleType}
-              placeholder="Write a message..."
-            />
+        <MessagesList messages={messages} ref="mesgList"/>
+
+        <div className="sending-block-wrapper">
+          <div className="message-form">
+            <div className="form-group">
+              <input
+                className={this.state.shake && 'shake'}
+                onKeyPress={this.handleKeyPress}
+                type="text"
+                ref="msgText"
+                autoFocus
+                placeholder="Write a message..."
+              />
+            </div>
           </div>
-          <input
-            type="submit"
-            className="btn btn-success"
-            value="Send"
-          />
-        </form>
+        </div>
       </div>
     );
   }

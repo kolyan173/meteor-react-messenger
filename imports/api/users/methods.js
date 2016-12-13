@@ -3,6 +3,7 @@ import { _ } from 'meteor/underscore';
 import { ValidatedMethod } from 'meteor/mdg:validated-method';
 import { SimpleSchema } from 'meteor/aldeed:simple-schema';
 import { DDPRateLimiter } from 'meteor/ddp-rate-limiter';
+import { Accounts } from 'meteor/accounts-base';
 
 import { Users } from './users.js';
 
@@ -10,20 +11,37 @@ export const update = new ValidatedMethod({
   name: 'users.update',
 
   validate: new SimpleSchema({
-    id: { type: String },
-    newText: { type: String }
+    username: { type: String, optional: true },
+    email: { type: String, optional: true },
+    profile: { type: Users.schema.UserProfile }
   }).validator(),
 
-  run({ id, newText }) {
-    const message = Messages.findOne(id);
+  run(data) {
+    console.log('DATA', data);
+    const user = Meteor.users.findOne(id);
 
-    if (!message.editableBy(this.userId)) {
-      throw new Meteor.Error('Cannot edit message because it is not yours');
+    if (!user.editableBy(this.userId)) {
+      throw new Meteor.Error('Cannot edit user because it is not yours');
     }
 
-    Messages.update(id, {
-      $set: { text: newText }
-    });
+    if (data.username) {
+        user.username = data.username;
+    }
+
+    if (data.email) {
+        user.emails[0].address = data.email;
+
+        Accounts.sendVerificationEmail(user._id);
+    }
+
+    Object.assign(user.profile, _.omit(
+        data,
+        ['username', 'emails', 'password_confirm', 'current_password']
+    ));
+    Meteor.users.update({_id: Meteor.userId()}, user);
+    // Messages.update(id, {
+    //   $set: { text: newText }
+    // });
   }
 });
 

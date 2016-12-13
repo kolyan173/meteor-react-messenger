@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import _ from 'lodash';
+import MessageItem from './MessageItem.jsx';
 
 const { array } = PropTypes;
 
@@ -8,12 +9,32 @@ export default class MessagesList extends Component {
     messages: array
   }
 
-  static defaultProps = {
-    messages: []
-  }
-
   constructor(props) {
     super(props);
+
+    this.messages = [];
+  }
+
+  componentDidMount() {
+    setTimeout(() => {
+      const el = this.refs.msgList;
+
+      el.scrollTop = el.scrollHeight;
+    }, 500);
+  }
+
+  componentWillReceiveProps(newProps) {
+    const { messages } = this.props;
+
+    if (messages.length !== newProps.messages) {
+      // this.mess
+      // const newMessages = _.difference(newProps.messages, this.messages);
+      // console.log(newProps.messages, this.messages);
+      // this.messages = this.messages.concat(newMessages);
+
+      const el = this.refs.msgList;
+      el.scrollTop = el.scrollHeight;
+    }
   }
 
   shouldComponentUpdate(newProps) {
@@ -22,12 +43,13 @@ export default class MessagesList extends Component {
 
   render() {
     return (
-      <div className="messages-list">
+      <div className="messages-list" ref="msgList">
         {this.props.messages.map((item, index) => (
-          <div className="message" key={index}>
-            <div className="message-author">{item.authorName || 'Anonymous'}</div>
-            <div className="message-text">{item.text}</div>
-          </div>
+          <MessageItem
+            key={index}
+            author={item.authorName}
+            content={item.text}
+          />
         ))}
       </div>
     );

@@ -68,14 +68,14 @@ export default class App extends Component {
     const closeMenu = this.toggleMenu.bind(this, false);
 
     return (
-      <div id="container" className={menuOpen ? 'menu-open' : ''}>
+      <div id="container" className={`${menuOpen ? 'menu-open' : ''}`}>
         <Header {...this.props} />
 
         <div
           id="content-container"
           className="jumbotron container"
         >
-            {children}
+          {children}
         </div>
       </div>
     );
