@@ -18,7 +18,7 @@ export default class App extends Component {
   }
 
   static contextTypes = {
-    router: object,
+    router: object
   }
 
   constructor(props) {
@@ -28,8 +28,6 @@ export default class App extends Component {
       menuOpen: false,
       showConnectionIssue: false
     };
-    this.toggleMenu = this.toggleMenu.bind(this);
-    this.logout = this.logout.bind(this);
   }
 
   componentDidMount() {
@@ -38,20 +36,12 @@ export default class App extends Component {
     }, CONNECTION_ISSUE_TIMEOUT);
   }
 
-  componentWillReceiveProps({ loading, children }) {
+  componentWillReceiveProps({ loading, children, location }) {
     // redirect / to a list once lists are ready
     // if (!loading && !children) {
     //   const list = Lists.findOne();
     //   this.context.router.replace(`/lists/${list._id}`);
     // }
-  }
-
-  toggleMenu(menuOpen = !Session.get('menuOpen')) {
-    Session.set({ menuOpen });
-  }
-
-  logout() {
-    Meteor.logout();
   }
 
   render() {
@@ -65,11 +55,11 @@ export default class App extends Component {
       location,
     } = this.props;
 
-    const closeMenu = this.toggleMenu.bind(this, false);
-
     return (
       <div id="container" className={`${menuOpen ? 'menu-open' : ''}`}>
-        <Header {...this.props} />
+        { !['/login', '/signup'].includes(location.pathname) &&
+          <Header {...this.props} />
+        }
 
         <div
           id="content-container"

@@ -2,12 +2,9 @@ import { Mongo } from 'meteor/mongo';
 import { SimpleSchema } from 'meteor/aldeed:simple-schema';
 
 class UsersCollection extends Mongo.Collection {
-  // insert(doc, callback) {
-  //   console.log('USRES: insert');
-  //   doc.createdAt || ( doc.createdAt = new Date() );
-  //
-  //   return super.insert(doc, callback);
-  // }
+  update(selector, modifier) {
+    return Meteor.users.update({_id: Meteor.userId()}, modifier);
+  }
 }
 
 export const Users = new UsersCollection('Users');
@@ -25,8 +22,9 @@ Users.schema.UserProfile = new SimpleSchema({
 });
 
 Users.schema.User = new SimpleSchema({
-  username: { type: String, optional: true },
-  emails: { type: [Object], optional: true },
+  _id: { type: String },
+  username: { type: String },
+  emails: { type: [Object] },
   createdAt: { type: Date },
   profile: { type: Users.schema.UserProfile }
 });

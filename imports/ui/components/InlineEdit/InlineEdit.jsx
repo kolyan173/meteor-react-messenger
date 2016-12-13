@@ -3,10 +3,14 @@ import Input from '../../components/FormElements/Input.jsx';
 
 export default class InlineEdit extends Component {
   render() {
-    const { value, editing, className } = this.props;
+    const { value, editing, className, label, placeholder } = this.props;
 
     return editing
       ? <Input {...this.props} />
-      : <div className={className}>{value}</div>;
+      : <div className="form-group">
+          <div className="form-control">
+            {label || value}
+          </div>
+        </div>;
   }
 }

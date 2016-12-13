@@ -1,11 +1,14 @@
 import React, { Component, PropTypes } from 'react';
-import { objectsDiff } from '../../utils.js';
+import { objectsDiff, capitalizeFirstLetter } from '../../utils.js';
 import { update } from '../../../api/users/methods.js';
+import Input from '../../components/FormElements/Input.jsx';
 import PageHeader from '../../components/PageHeader/PageHeader.js';
 import InlineEdit from '../../components/InlineEdit/InlineEdit.jsx';
 import Form from '../../components/FormElements/Form.jsx';
 import countriesList from 'country-list';
 import _ from 'lodash';
+import Modal from 'react-modal';
+import { Accounts } from 'meteor/accounts-base';
 
 const { object } = PropTypes;
 
@@ -25,8 +28,11 @@ export default class Profile extends Component {
     );
 
     this.state = {
-      isEditable: false
+      isEditable: false,
+      openModal: false
     };
+
+    this.formData = {}
   }
 
   handleResetChange = () => {
@@ -58,17 +64,48 @@ export default class Profile extends Component {
     }
 
     const filled = user.username || data.username;
-
     if (filled && user.username !== data.username) {
       fields.push('username');
+    }
+
+    if (data.newpassword) {
+      fields.push('newpassword');
+    }
+
+    if (data.password) {
+      fields.push('password');
     }
 
     return fields;
   }
 
   submit = (data) => {
-    console.log(_.pick(data, this.defineChangedFields(data)));
-    // update.call(data);
+    const formData = Object.assign(this.formData, data);
+    const changes = _.pick(formData, this.defineChangedFields(formData));
+
+    if (changes.newpassword && !changes.password) {
+      return this.setState({ openModal: true });
+    }
+
+    if (changes.password) {
+      Accounts.changePassword(changes.password, changes.newpassword, (err) => {
+        if (err) { return console.error(err); }
+
+        update.call(
+          _.omit(changes, ['newpassword', 'password']),
+          this.handleUpdatingUser.bind(this)
+        );
+      });
+    } else {
+      update.call(changes, this.handleUpdatingUser.bind(this));
+    }
+  }
+
+  handleUpdatingUser(err) {
+    if (err) { return console.error(err); }
+
+    this.setState({ isEditable: false, openModal: false });
+    this.formData = {};
   }
 
   onValid = (data) => {
@@ -83,9 +120,25 @@ export default class Profile extends Component {
     this.setState({ reset: false });
   }
 
+  handleCloseModal = () => {
+    this.setState({ openModal: false });
+  }
+
   render() {
     const { messages, user } = this.props;
     const { isEditable, reset } = this.state;
+    const customStyles = {
+      content : {
+        top : '50%',
+        left : '50%',
+        right : 'auto',
+        bottom : 'auto',
+        marginRight : '-50%',
+        transform : 'translate(-50%, -50%)'
+      }
+    };
+    const location = _.result(user, 'profile.location')
+    const locationLabel = location && capitalizeFirstLetter(location);
 
     return (
       <section className="profile">
@@ -96,6 +149,7 @@ export default class Profile extends Component {
           className="profile-form"
           reset={reset}
           onReset={this.handleReset}
+          ref="form"
         >
           <InlineEdit
             editing={isEditable}
@@ -112,7 +166,8 @@ export default class Profile extends Component {
             editing={isEditable}
             type="select"
             name="location"
-            value={_.result(user, 'profile.location') || ''}
+            value={location || ''}
+            label={locationLabel}
             validations={{
               isExisty: true
             }}
@@ -126,6 +181,7 @@ export default class Profile extends Component {
           <InlineEdit
             editing={isEditable}
             name="username"
+            label="Anonymous"
             value={_.result(user, 'username') || ''}
             validations={{
               minLength: 3
@@ -135,6 +191,42 @@ export default class Profile extends Component {
             }}
             placeholder="Username"
           />
+
+          {isEditable &&
+            <Input
+              name="newpassword"
+              type="password"
+              value=""
+              validations={{
+                minLength: 6,
+                maxLength: 12
+              }}
+              validationErrors={{
+                minLength: 'Password is too shirt. Minimum is 6 characters',
+                maxLength: '"Password is too long. Maximim is 12 characters'
+              }}
+              placeholder="Password"
+            />
+          }
+
+          {isEditable &&
+            <Input
+              name="confirm"
+              type="password"
+              value=""
+              validations={{
+                equalsField: 'newpassword',
+                minLength: 6,
+                maxLength: 12
+              }}
+              validationErrors={{
+                minLength: 'Password is too shirt. Minimum is 6 characters',
+                maxLength: '"Password is too long. Maximim is 12 characters',
+                equalsField: 'Passwords mismatch'
+              }}
+              placeholder="Confirm password"
+            />
+          }
 
           <input
             type={ isEditable ? 'submit' : 'button' }
@@ -152,6 +244,36 @@ export default class Profile extends Component {
             />
           }
         </Form>
+
+        <Modal
+          isOpen={this.state.openModal}
+          onRequestClose={this.handleCloseModal}
+          contentLabel="Modal"
+          style={customStyles}
+        >
+          <div className="modal-header">
+            <h4>Change password</h4>
+          </div>
+          <div className="modal-body">
+            <p>To change password you need to enter current one</p>
+
+            <input
+              className="form-control"
+              type="password"
+              placeholder="Current password"
+              onChange={(e) => {this.formData.password = e.target.value; }}
+            />
+          </div>
+          <div className="modal-footer">
+            <button
+              className="btn btn-primary"
+              onClick={this.submit.bind(this, this.formData)}
+              type="submit"
+            >
+              Submit
+            </button>
+          </div>
+        </Modal>
       </section>
     );
   }

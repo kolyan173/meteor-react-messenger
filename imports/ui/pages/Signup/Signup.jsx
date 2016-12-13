@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router';
 import { Accounts } from 'meteor/accounts-base';
 import Input from '../../components/FormElements/Input.jsx';
 import PageHeader from '../../components/PageHeader/PageHeader.js';
@@ -58,7 +59,6 @@ export default class Signup extends Component {
 
   onInvalid = (data) => {
     this.setState({ isValid: false });
-    console.log(data);
   }
 
   handleFieldChange = (e) => {
@@ -133,14 +133,20 @@ export default class Signup extends Component {
             required
           />
 
-          <button
-            type="submit"
-            className="btn btn-primary btn-block"
-            // disabled={!this.isValid}
-          >
-            Signup
-          </button>
+          <div className="form-group">
+            <button
+              type="submit"
+              className="btn btn-primary btn-block"
+            >
+              Signup
+            </button>
+          </div>
         </Form>
+
+        <div className="or-separator">
+          <span>or</span>
+          <Link to="/login" className="btn btn-default"> Login </Link>
+        </div>
       </div>
     );
   }
