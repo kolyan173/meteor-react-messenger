@@ -19,10 +19,18 @@ export default class Home extends Component {
     super(props);
 
     this.messageText = '';
+    this.oldMessages = [];
   }
 
   state = {
     messageText: ''
+  }
+
+  componentWillReceiveProps(newProps) {
+    if (!newProps.messages && newProps.messages) {
+      this.oldMessages = newProps.messages;
+      console.log(this.oldMessages);
+    }
   }
 
   handleSendMessage = (e) => {

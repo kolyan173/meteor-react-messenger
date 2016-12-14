@@ -29,3 +29,4 @@ dburles:collection-helpers
 standard-minifier-css
 less
 aldeed:simple-schema
+tmeasday:publish-counts

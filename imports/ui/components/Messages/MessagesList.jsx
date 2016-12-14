@@ -47,7 +47,9 @@ export default class MessagesList extends Component {
         {this.props.messages.map((item, index) => (
           <MessageItem
             key={index}
-            author={item.authorName}
+            authorId={item.authorId}
+            time={item.createdAt}
+            author={item.authorUsername}
             content={item.text}
           />
         ))}

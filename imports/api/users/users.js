@@ -18,7 +18,8 @@ Users.deny({
 Users.schema = {};
 
 Users.schema.UserProfile = new SimpleSchema({
-  location: { type: String }
+  location: { type: String },
+  oldLocations: { type: [String] }
 });
 
 Users.schema.User = new SimpleSchema({

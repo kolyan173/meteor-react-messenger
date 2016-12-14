@@ -20,7 +20,7 @@ export const insert = new ValidatedMethod({
       throw new Meteor.Error('Must be logged in to insert message');
     }
 
-    const message = Object.assign(data, { createdAt: new Date() });
+    const message = Object.assign(data, { createdAt: Date.now() });
 
     Messages.insert(message);
   }

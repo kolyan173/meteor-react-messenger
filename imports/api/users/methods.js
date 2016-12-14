@@ -20,19 +20,29 @@ export const update = new ValidatedMethod({
 
   run(data) {
     const user = Meteor.users.findOne(this.userId);
+    const { username, email, location } = data;
 
-    if (data.username) {
-      user.username = data.username;
+    if (username) {
+      user.username = username;
     }
 
-    if (data.email) {
-      user.emails[0].address = data.email;
+    if (email) {
+      user.emails[0].address = email;
 
       Accounts.sendVerificationEmail(user._id);
     }
 
-    if (data.location) {
-      user.profile.location = data.location;
+    if (location) {
+      user.profile.oldLocations || (user.profile.oldLocations = []);
+
+      let { oldLocations } = user.profile;
+
+      oldLocations.push({
+        location: user.profile.location,
+        finish: Date.now(),
+      });
+
+      user.profile.location = location;
     }
 
     Users.update(this.userId, user);

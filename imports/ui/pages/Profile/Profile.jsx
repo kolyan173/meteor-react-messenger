@@ -167,7 +167,7 @@ export default class Profile extends Component {
             type="select"
             name="location"
             value={location || ''}
-            label={locationLabel}
+            forceLabel={locationLabel}
             validations={{
               isExisty: true
             }}

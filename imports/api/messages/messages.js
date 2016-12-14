@@ -7,13 +7,13 @@ class MessagesCollection extends Mongo.Collection {
 
     doc.authorLocation = user.profile.location;
     user.username && (doc.authorUsername = user.username);
-    doc.createdAt || ( doc.createdAt = new Date() );
+    // doc.createdAt || ( doc.createdAt = Date.now() );
 
     return super.insert(doc, callback);
   }
 }
 
-export const Messages = new MessagesCollection('Messages');
+export const Messages = new MessagesCollection('messages');
 
 Messages.deny({
   insert() { return true; },
@@ -23,7 +23,7 @@ Messages.deny({
 
 Messages.schema = new SimpleSchema({
   text: { type: String },
-  createdAt: { type: Date },
+  createdAt: { type: Number },
   authorId: { type: String },
   authorLocation: { type: String },
   authorUsername: { type: String, optional: true }

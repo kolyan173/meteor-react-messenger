@@ -23,17 +23,10 @@ export default class Signup extends Component {
         label: item
       })
     );
-    //
-    // this.fields = [
-    //   'email',
-    //   'password',
-    //   'confirm'
-    // ];
   }
 
   state = {
-    location: '',
-    isValid: false
+    location: ''
   }
 
   submit = (data) => {
@@ -50,19 +43,6 @@ export default class Signup extends Component {
 
       this.context.router.push('/');
     });
-  }
-
-  onValid = (data) => {
-    this.setState({ isValid: true });
-    console.log(data);
-  }
-
-  onInvalid = (data) => {
-    this.setState({ isValid: false });
-  }
-
-  handleFieldChange = (e) => {
-    console.log(e.target.value);
   }
 
   render() {

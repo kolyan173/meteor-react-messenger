@@ -1,4 +1,5 @@
 import React, { Component, PropTypes } from 'react';
+import moment from 'moment';
 
 const { string, number, array } = PropTypes;
 
@@ -18,23 +19,18 @@ export default class MessageItem extends Component {
   }
 
   render() {
-    const { author, content, subMessages } = this.props;
-    console.log('render');
+    const { author, content, time, authorId } = this.props;
+    const isMine = authorId === Meteor.userId();
+
     return (
-      <div className="message-item panel panel-default">
-        <h4 className="message-author panel-heading">
-          {author}
-        </h4>
-        <div className="message-content panel-body">
+      <div className={`message-item ${isMine && 'mine'}`}>
+        <strong>{author}</strong>:
+        <span className="message-content">
           {content}
-        </div>
-         <ul className="list-group">
-            {subMessages.map((item, i) => (
-              <li className="list-group-item" key={i}>
-                {item}
-              </li>
-            ))}
-         </ul>
+        </span>
+        <span className="pull-right">
+          {moment(time).format('HH:mm')}
+        </span>
       </div>
     );
   }
