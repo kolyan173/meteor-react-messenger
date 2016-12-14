@@ -1,6 +1,9 @@
 {
   "name": "messaging-kntcs",
   "private": true,
+  "babel": {
+    "plugins": ["transform-class-properties", "transform-decorators-legacy"]
+  },
   "scripts": {
     "start": "meteor run"
   },
