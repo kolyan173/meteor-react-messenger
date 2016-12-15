@@ -15,5 +15,4 @@ Accounts.onLogin((id) => {
   if (targetRoute) {
     browserHistory.push(targetRoute);
   }
-
 });

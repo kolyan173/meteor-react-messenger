@@ -18,12 +18,48 @@ export default class Signup extends Component {
     super(props);
   }
 
-  submit = ({ email, password }) => {
+  state = { validationErrors: {} }
+
+  handleSubmit = ({ email, password }) => {
     Meteor.loginWithPassword(email, password, (err) => {
-      if (err) { return console.error(err); }
+      if (err) {
+        if (err.message === 'User not found [403]') {
+          this.setState({
+            validationErrors: { email: err.reason }
+          });
+        } else if (err.message === 'Incorrect password [403]') {
+          this.setState({
+            validationErrors: { password: err.reason }
+          });
+        }
+
+        this.shake();
+
+        return console.error(err);
+      }
 
       this.context.router.push('/');
     });
+  }
+
+  handleFieldChange = (field) => {
+    if (['email', 'password'].includes(field)) {
+      this.setState({
+        validationErrors: {}
+      });
+    }
+  }
+
+  shake = () => {
+    this.setState({ invalidSubmit: true });
+
+    setTimeout(() => {
+      this.setState({ invalidSubmit: false });
+    }, 5e2);
+  }
+
+  handleInvalidSubmit = () => {
+    this.shake();
   }
 
   render() {
@@ -32,10 +68,11 @@ export default class Signup extends Component {
         <PageHeader title="Login" />
 
         <Form
-          onValidSubmit={this.submit}
-          onValid={this.onValid}
-          onInvalid={this.onInvalid}
+          onValidSubmit={this.handleSubmit}
+          onInvalidSubmit={this.handleInvalidSubmit}
+          onValid={this.handleValid}
           className="signin-form"
+          validationErrors={this.state.validationErrors}
         >
           <Input
             name="email"
@@ -46,6 +83,7 @@ export default class Signup extends Component {
             }}
             placeholder="Email address"
             required
+            onChange={this.handleFieldChange.bind(this, 'email')}
           />
           <Input
             name="password"
@@ -61,12 +99,13 @@ export default class Signup extends Component {
             }}
             placeholder="Password"
             required
+            onChange={this.handleFieldChange.bind(this, 'password')}
           />
 
           <div className="form-group">
             <button
               type="submit"
-              className="btn btn-primary btn-block"
+              className={`btn btn-primary btn-block ${this.state.invalidSubmit && 'shake'}`}
             >
               Sigin
             </button>

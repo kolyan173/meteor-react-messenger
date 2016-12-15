@@ -8,11 +8,12 @@ import {
   updateText
 } from '../../../api/messages/methods.js';
 
-const { array } = PropTypes;
+const { array, number } = PropTypes;
 
 export default class Home extends Component {
   static propTypes = {
-    messages: array
+    messages: array,
+    limitMsgCount: number
   };
 
   constructor(props) {
@@ -23,14 +24,23 @@ export default class Home extends Component {
   }
 
   state = {
-    messageText: ''
+    messageText: '',
+    loading: false
   }
 
   componentWillReceiveProps(newProps) {
-    if (!newProps.messages && newProps.messages) {
-      this.oldMessages = newProps.messages;
-      console.log(this.oldMessages);
+    const { messages } = newProps;
+
+    if (!_.isEqual(messages, this.props.messages)) {
+      if (this.state.loading) {
+        this.setState({ loading: false });
+      }
     }
+  }
+
+  componentWillUnmount() {
+    Session.set('messagesCount', this.props.limitMsgCount);
+    $('.messages-list').off();
   }
 
   handleSendMessage = (e) => {
@@ -69,7 +79,10 @@ export default class Home extends Component {
       <div className="messages">
         <PageHeader title="Messenger"/>
 
-        <MessagesList messages={messages} ref="mesgList"/>
+        <MessagesList
+          messages={messages}
+          ref="msgList"
+        />
 
         <div className="sending-block-wrapper">
           <div className="message-form">

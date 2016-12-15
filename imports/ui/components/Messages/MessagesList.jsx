@@ -1,6 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import _ from 'lodash';
 import MessageItem from './MessageItem.jsx';
+import InfiniteScroll from '../InfiniteScroll/InfiniteScroll.jsx';
 
 const { array } = PropTypes;
 
@@ -11,48 +12,67 @@ export default class MessagesList extends Component {
 
   constructor(props) {
     super(props);
-
-    this.messages = [];
   }
 
-  componentDidMount() {
-    setTimeout(() => {
-      const el = this.refs.msgList;
-
-      el.scrollTop = el.scrollHeight;
-    }, 500);
-  }
+  state = { shouldAttachInfiniteScroll: false }
 
   componentWillReceiveProps(newProps) {
     const { messages } = this.props;
 
-    if (messages.length !== newProps.messages) {
-      // this.mess
-      // const newMessages = _.difference(newProps.messages, this.messages);
-      // console.log(newProps.messages, this.messages);
-      // this.messages = this.messages.concat(newMessages);
+    if (messages.length !== newProps.messages.length) {
+      if (!messages.length) {
+        setTimeout(() => {
+          const el = this.refs.msgList;
+          el.scrollTop = el.scrollHeight;
+        }, 100);
+      }
 
-      const el = this.refs.msgList;
-      el.scrollTop = el.scrollHeight;
+      this.setState({ shouldAttachInfiniteScroll: true });
     }
   }
 
-  shouldComponentUpdate(newProps) {
-    return !_.isEqual(this.props, newProps);
+  componentDidUpdate() {
+    const el = this.refs.msgList;
+    el.scrollTop = el.scrollHeight - this.state.scrollPosition - 1;
+  }
+
+  shouldComponentUpdate(newProps, newState) {
+    return true;
+    // return ! (_.isEqual(this.props, newProps) || _.isEqual(this.state, newState));
+  }
+
+  handleInfiniteLoad = (pageNumber) => {
+    const el = this.refs.msgList;
+
+    this.setState({
+      shouldAttachInfiniteScroll: false,
+      scrollPosition: el.scrollHeight
+    });
+
+    Session.set('messagesCount', Session.get('messagesCount') + 2);
   }
 
   render() {
     return (
       <div className="messages-list" ref="msgList">
-        {this.props.messages.map((item, index) => (
-          <MessageItem
-            key={index}
-            authorId={item.authorId}
-            time={item.createdAt}
-            author={item.authorUsername}
-            content={item.text}
-          />
-        ))}
+        <InfiniteScroll
+          shouldAttachScroll={this.state.shouldAttachInfiniteScroll}
+          loadMore={this.handleInfiniteLoad}
+          basedElement={this.refs.msgList}
+          isReverse
+        >
+          {this.props.messages.map((item, index) => (
+            <MessageItem
+              key={index}
+              _key={index === (this.props.messages.length -1) && index}
+              authorId={item.authorId}
+              time={item.createdAt}
+              author={item.authorUsername}
+              content={item.text}
+              threshold={10}
+            />
+          ))}
+        </InfiniteScroll>
       </div>
     );
   }

@@ -31,6 +31,7 @@ export default class MessageItem extends Component {
         <span className="pull-right">
           {moment(time).format('HH:mm')}
         </span>
+        <strong>{this.props._key}</strong>:
       </div>
     );
   }

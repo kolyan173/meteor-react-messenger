@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { Decorator as FormsyElement } from 'formsy-react';
 import Select from 'react-select';
 
-const { string } = PropTypes;
+const { string, func } = PropTypes;
 
 @FormsyElement()
 export default class Input extends Component {
@@ -11,12 +11,18 @@ export default class Input extends Component {
     type: string,
     name: string,
     placeholder: string,
-    classname: string
+    classname: string,
+    onChange: func
   }
 
   static defaultProps = {
     editing: true,
     type: 'text'
+  }
+
+  handleChange = (e) => {
+    this.props.setValue(e.target.value);
+    this.props.onChange && this.props.onChange();
   }
 
   render() {
@@ -62,7 +68,7 @@ export default class Input extends Component {
           defaultValue={defaultValue}
           placeholder={placeholder}
           value={this.props.getValue()}
-          onChange={(e) => this.props.setValue(e.target.value)}
+          onChange={this.handleChange}
           type={type}
         />
 

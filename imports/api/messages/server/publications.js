@@ -3,27 +3,36 @@ import { SimpleSchema } from 'meteor/aldeed:simple-schema';
 import _ from 'lodash';
 import { Messages } from '../messages.js';
 
-const messageLimit = 20;
-const query = {
-  sort: { createdAt: -1 },
-  limit: messageLimit
-};
+Meteor.smartPublish('messages', (locationDataList) => {
+  console.log('publish');
+// Meteor.publish('messages', (locationDataList) => {
+  return locationDataList.map((data) => {
+    const { location, start, finish, limit } = data;
+    const selector = { authorLocation: location };
 
-Meteor.publish('messages', (location) => {
-  console.log(_.last(Messages.find({ authorLocation: location }, query).fetch()));
-  return Messages.find({ authorLocation: location }, query);
-});
+    if (start) {
+      selector.createdAt = { $gt: start, $lt: finish };
+    }
 
-Meteor.publish('oldMessages', (oldLocationData, limit, isStop) => {
-  if (isStop) { return this.stop(); }
-
-  const { location, start, finish } = oldLocationData;
-
-  return Messages.find({
-    authorLocation: location,
-    createdAt: { $gt: start, $lt: finish }
-  }, {
-    limit,
-    sort: { createdAt: 1 }
+    const cursor = Messages.find(selector, {
+      limit,
+      sort: { createdAt: -1 }
+    });
+    console.log(data, cursor.count());
+    return cursor;
   });
 });
+
+// Meteor.publish('oldMessages', (oldLocationData, limit, isStop) => {
+//   if (isStop) { return this.stop(); }
+//
+//   const { location, start, finish } = oldLocationData;
+//
+//   return Messages.find({
+//     authorLocation: location,
+//     createdAt: { $gt: start, $lt: finish }
+//   }, {
+//     limit,
+//     sort: { createdAt: 1 }
+//   });
+// });

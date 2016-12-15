@@ -32,7 +32,7 @@ const requireLogin = (nextState, replace, cb) => {
     // oops, not logged in, so can't be here!
     replace('/login');
   } else if (isLogging) {
-    Session.set('targetRoute', nextState.location.pathname);
+    return Session.set('targetRoute', nextState.location.pathname);
   }
 
   cb();
