@@ -8,13 +8,19 @@ class MessagesStore {
     this.loadedLocationDataList = [];
     this.unloadedLocationDataList = [];
     this.loadedTotal = null;
-    this.loaded = false;
+    this.loaded = true;
 
     Session.set('messagesLimit', this.getDefaultLimit());
   }
 
   loadMore() {
-    Session.set('messagesLimit', Session.get('messagesLimit') + this.getDefaultLimit());
+    return Session.set('messagesLimit', Session.get('messagesLimit') + this.getDefaultLimit());
+  }
+
+  chargeNextLocation() {
+    console.log('chargeNextLocation');
+    this.processLocationData = this.unloadedLocationDataList.pop();
+    return this.loadedLocationDataList.push(this.processLocationData);
   }
 
   getDefaultLimit() {
@@ -32,8 +38,7 @@ class MessagesStore {
         start: afterNextLoc ? afterNextLoc.finish : 0
       });
 
-      this.processLocationData = this.unloadedLocationDataList.pop();
-      this.loadedLocationDataList.push(this.processLocationData);
+      this.chargeNextLocation();
 
       return cb(true);
     }
@@ -41,14 +46,18 @@ class MessagesStore {
     return cb();
   }
 
-  getMsgLimit() {
-    const forceLimit = Session.get('messagesLimit') > this.limit &&  Session.get('messagesLimit');
-    return forceLimit || Session.get('messagesLimit') - this.loadedTotal;
+  getRestCount(loadedCount) {
+    console.log('this.loadedTotal', loadedCount);
+    return Session.get('messagesLimit') - loadedCount;
+  }
+
+  upLimit(loadedMsgCount) {
+    console.log('upLimit');
+    return _.last(this.loadedLocationDataList).limit = this.processLocationData.limit = this.getRestCount(loadedMsgCount);
   }
 
   reset() {
     this.cursor = null;
-    this.limit = 12;
     this.loading = true;
     this.initLoading = true;
     this.lastLoadedLocation = null;

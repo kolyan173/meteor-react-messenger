@@ -33,7 +33,7 @@ export default class Home extends Component {
 
   componentWillReceiveProps(newProps) {
     const { messages } = newProps;
-
+    console.log('Messages', messages.length);
     if (!_.isEqual(messages, this.props.messages)) {
       if (this.state.loading) {
         this.setState({ loading: false });

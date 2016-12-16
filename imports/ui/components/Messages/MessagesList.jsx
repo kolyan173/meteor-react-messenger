@@ -21,20 +21,8 @@ export default class MessagesList extends Component {
     const { messages } = this.props;
 
     if (messages.length !== newProps.messages.length) {
-      if (!messages.length) {
-        setTimeout(() => {
-          // const el = this.refs.msgList;
-          // el.scrollTop = el.scrollHeight;
-        }, 100);
-      }
-
       this.setState({ shouldAttachInfiniteScroll: true });
     }
-  }
-
-  componentDidUpdate() {
-    // const el = this.refs.msgList;
-    // el.scrollTop = el.scrollHeight - this.state.scrollPosition - 1;
   }
 
   shouldComponentUpdate(newProps, newState) {
@@ -45,10 +33,7 @@ export default class MessagesList extends Component {
   handleInfiniteLoad = (pageNumber) => {
     const el = this.refs.msgList;
 
-    this.setState({
-      shouldAttachInfiniteScroll: false
-      // scrollPosition: el.scrollHeight
-    });
+    this.setState({ shouldAttachInfiniteScroll: false });
 
     messagesStore.loadMore();
   }
@@ -67,7 +52,6 @@ export default class MessagesList extends Component {
           {this.props.messages.map((item, index) => (
             <MessageItem
               key={index}
-              _key={index === (this.props.messages.length -1) && index}
               authorId={item.authorId}
               time={item.createdAt}
               author={item.authorUsername}

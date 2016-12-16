@@ -35,7 +35,7 @@ export default class Header extends Component {
   }
 
   render() {
-    const { user } = this.props;
+    const user = Meteor.user();
     const customStyles = {
       content : {
         top : '50%',
