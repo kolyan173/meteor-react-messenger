@@ -18,7 +18,6 @@ class MessagesStore {
   }
 
   chargeNextLocation() {
-    console.log('chargeNextLocation');
     this.processLocationData = this.unloadedLocationDataList.pop();
     return this.loadedLocationDataList.push(this.processLocationData);
   }
@@ -47,12 +46,10 @@ class MessagesStore {
   }
 
   getRestCount(loadedCount) {
-    console.log('this.loadedTotal', loadedCount);
     return Session.get('messagesLimit') - loadedCount;
   }
 
   upLimit(loadedMsgCount) {
-    console.log('upLimit');
     return _.last(this.loadedLocationDataList).limit = this.processLocationData.limit = this.getRestCount(loadedMsgCount);
   }
 
