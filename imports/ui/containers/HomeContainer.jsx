@@ -2,130 +2,104 @@ import { Meteor } from 'meteor/meteor';
 import { Session } from 'meteor/session';
 import { createContainer } from 'meteor/react-meteor-data';
 import _ from 'lodash';
-// import { Counts } from 'meteor/tmeasday:publish-counts';
 
 import { Messages } from '../../api/messages/messages.js';
 import Home from '../pages/Home/Home.jsx';
+import messagesStore from '../stores/messages';
 
 let currentLocationLoading = true;
 let lastLoadedLocation;
 
-const messages = {
-  cursor: null,
-  defaultLimit: 12,
-  loading: true,
-  initLoading: true,
-  lastLoadedLocation: null,
-  loadedLocationDataList: [],
-  unloadedLocationDataList: [],
-  loadedTotal: null,
-
-  loadData(cb) {
-    debugger;
-    const limit = this.getMsgLimit();
-    const nextLocation = _.last(this.unloadedLocationDataList);
-
-    if (nextLocation && limit > 0) {
-      const afterNextLoc = _(this.unloadedLocationDataList).initial().last();
-      const extLocation = Object.assign(nextLocation, {
-        limit,
-        start: afterNextLoc ? afterNextLoc.finish : 0
-      });
-
-      this.processLocationData = this.unloadedLocationDataList.pop();
-      this.loadedLocationDataList.push(this.processLocationData);
-
-      return cb(true);
-    }
-    return cb();
-  },
-  getMsgLimit() {
-    const forceLimit = Session.get('messagesCount') > this.defaultLimit &&  Session.get('messagesCount');
-    return forceLimit || Session.get('messagesCount') - this.loadedTotal;
-  }
-};
-
-// Session.set('messagesCount', null);
-
 export default createContainer(() => {
-  let oldMessages;
-  let oldLocationData;
-  let loadedMsgCount = 0;
-  let messageCursor;
-
-
-  console.log('createContainer', Messages.find().count());
-
-  Session.setDefault('messagesCount', messages.defaultLimit);
-
   const user = Meteor.user();
   const { location, oldLocations } = user.profile;
+  const loadedMsgCount = Messages.find().count();
 
-  if (!messages.loadedTotal || messages.loadedTotal !== Messages.find().count()) {
-    messages.loadedTotal = Messages.find().count();
-    if (messages.initLoading) {
-      messages.initLoading = false;
+  let messageCursor;
 
-      const extLocation = {
-        limit: messages.defaultLimit,
-        location: user.profile.location
-      };
+  Session.setDefault('messagesLimit', messagesStore.getDefaultLimit());
 
-      messages.unloadedLocationDataList = messages.unloadedLocationDataList.concat(oldLocations, [extLocation]);
-      messages.processLocationData = messages.unloadedLocationDataList.pop();
-      messages.loadedLocationDataList.push(messages.processLocationData);
+  if (messagesStore.initLoading) {
+    messagesStore.initLoading = false;
 
-      console.log('1111', messages.loadedLocationDataList);
-      messageCursor = Meteor.subscribe('messages', messages.loadedLocationDataList, () => {
-        if (messages.loadedTotal === Messages.find().count()) {
-          messages.loadData((subscribe) => {
-            if (!subscribe) { return; }
-            console.log('invoke again');
-            console.log('1111', messages.loadedLocationDataList);
-            messageCursor = Meteor.subscribe('messages', messages.loadedLocationDataList);
-          });
-        }
+    const extLocation = {
+      limit: messagesStore.limit,
+      location: user.profile.location
+    };
 
-      });
-    } else {
-        const limit = messages.getMsgLimit();
-        const nextLocation = _.last(messages.unloadedLocationDataList);
+    messagesStore.unloadedLocationDataList = messagesStore.unloadedLocationDataList.concat(oldLocations, [extLocation]);
+    messagesStore.processLocationData = messagesStore.unloadedLocationDataList.pop();
+    messagesStore.loadedLocationDataList.push(messagesStore.processLocationData);
+    console.log('init subscribe');
+    messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList, () => {
+      // if (messagesStore.loadedTotal === loadedMsgCount) {
+        // messagesStore.loadData((subscribe) => {
+        //   if (!subscribe) { return; }
+        //   console.log('invoke again');
+        //   console.log('1111', messagesStore.loadedLocationDataList);
+        //   messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
+        // });
+      // }
 
-        if (nextLocation && limit > 0) {
-          const afterNextLoc = _(messages.unloadedLocationDataList).initial().last();
+    });
+  } else {
+    const messagesLimit = Session.get('messagesLimit');
+    const shouldLoadMore = messagesLimit > loadedMsgCount;
+    const currLocationFullLoaded = messagesStore.processLocationData && messagesStore.processLocationData.limit === messagesLimit;
+    const nextLocation = _.last(messagesStore.unloadedLocationDataList);
+    const noDataMore = currLocationFullLoaded && !nextLocation;
+
+    console.log('createContainer', loadedMsgCount);
+
+    if (!noDataMore && messagesLimit > loadedMsgCount) {
+      messagesStore.loadedTotal = loadedMsgCount;
+      messagesStore.loaded = false;
+
+      const limit = messagesStore.getMsgLimit();
+      // const loadMore = Session.get('messagesLimit') > messagesStore.limit;
+
+      if (((shouldLoadMore && !currLocationFullLoaded) || nextLocation) && limit > 0) {
+        if (currLocationFullLoaded) {
+          const afterNextLoc = _(messagesStore.unloadedLocationDataList).initial().last();
           const extLocation = Object.assign(nextLocation, {
             limit,
             start: afterNextLoc ? afterNextLoc.finish : 0
           });
 
-          messages.processLocationData = messages.unloadedLocationDataList.pop();
-          messages.loadedLocationDataList.push(messages.processLocationData);
-          console.log('1111', messages.loadedLocationDataList);
-          messageCursor = Meteor.subscribe('messages', messages.loadedLocationDataList, () => {
-            if (messages.loadedTotal === Messages.find().count()) {
-              messages.loadData((subscribe) => {
-                if (!subscribe) { return; }
-                console.log('invoke again');
-                messageCursor = Meteor.subscribe('messages', this.loadedLocationDataList);
-              });
-            }
-
-          });
+          messagesStore.processLocationData = messagesStore.unloadedLocationDataList.pop();
+          messagesStore.loadedLocationDataList.push(messagesStore.processLocationData);
+        } else {
+          _.last(messagesStore.loadedLocationDataList).limit = messagesStore.processLocationData.limit = Session.get('messagesLimit');
         }
+        console.log('main subscribe', messagesStore.loadedLocationDataList);
+        messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList, () => {
+          // if (messagesStore.loadedTotal === loadedMsgCount) {
+          //   messagesStore.loadData((subscribe) => {
+          //     if (!subscribe) { return; }
+          //     console.log('invoke again');
+          //     messageCursor = Meteor.subscribe('messages', this.loadedLocationDataList);
+          //   });
+          // }
 
+        });
+      }
+    } else {
+      messagesStore.loaded = true;
+      console.log('LOADED', messagesStore.loaded);
     }
-
-  } else {
-    debugger;
-    messageCursor = Meteor.subscribe('messages', messages.loadedLocationDataList);
   }
 
+  if (!messageCursor) {
+    messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
+  }
 
+  messagesStore.limit = Session.get('messagesLimit');
 
   return {
     loading: !(messageCursor && messageCursor.ready()),
     messages: Messages.find({}, {sort: { createdAt: 1 }}).fetch(),
-    limitMsgCount: messages.defaultLimit,
-    messagesCount: Session.get('messagesCount')
+    limitMsgCount: Session.get('messagesLimit'),
+    defaultMsgLimit: messagesStore.getDefaultLimit(),
+    messagesLoaded: messagesStore.loaded
   };
 }, Home);

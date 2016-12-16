@@ -2,6 +2,7 @@ import React, { Component, PropTypes } from 'react';
 import _ from 'lodash';
 import MessageItem from './MessageItem.jsx';
 import InfiniteScroll from '../InfiniteScroll/InfiniteScroll.jsx';
+import messagesStore from '../../stores/messages';
 
 const { array } = PropTypes;
 
@@ -22,8 +23,8 @@ export default class MessagesList extends Component {
     if (messages.length !== newProps.messages.length) {
       if (!messages.length) {
         setTimeout(() => {
-          const el = this.refs.msgList;
-          el.scrollTop = el.scrollHeight;
+          // const el = this.refs.msgList;
+          // el.scrollTop = el.scrollHeight;
         }, 100);
       }
 
@@ -32,8 +33,8 @@ export default class MessagesList extends Component {
   }
 
   componentDidUpdate() {
-    const el = this.refs.msgList;
-    el.scrollTop = el.scrollHeight - this.state.scrollPosition - 1;
+    // const el = this.refs.msgList;
+    // el.scrollTop = el.scrollHeight - this.state.scrollPosition - 1;
   }
 
   shouldComponentUpdate(newProps, newState) {
@@ -45,11 +46,11 @@ export default class MessagesList extends Component {
     const el = this.refs.msgList;
 
     this.setState({
-      shouldAttachInfiniteScroll: false,
-      scrollPosition: el.scrollHeight
+      shouldAttachInfiniteScroll: false
+      // scrollPosition: el.scrollHeight
     });
 
-    Session.set('messagesCount', Session.get('messagesCount') + 2);
+    messagesStore.loadMore();
   }
 
   render() {
@@ -60,6 +61,8 @@ export default class MessagesList extends Component {
           loadMore={this.handleInfiniteLoad}
           basedElement={this.refs.msgList}
           isReverse
+          initialLoad={!this.props.loaded}
+          loaded={this.props.loaded}
         >
           {this.props.messages.map((item, index) => (
             <MessageItem

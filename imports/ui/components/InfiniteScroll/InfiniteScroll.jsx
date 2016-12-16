@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import ReactDOM from 'react-dom';
+import _ from 'lodash';
 
 export default class InfiniteScroll extends Component {
   static propTypes = {
@@ -14,8 +15,9 @@ export default class InfiniteScroll extends Component {
     isReverse: PropTypes.bool,
     shouldAttachScroll: PropTypes.bool,
     children: PropTypes.array.isRequired,
-    basedElement: PropTypes.object
-  };
+    basedElement: PropTypes.object,
+    loaded: PropTypes.bool
+  }
 
   static defaultProps = {
     element: 'div',
@@ -26,8 +28,9 @@ export default class InfiniteScroll extends Component {
     useWindow: false,
     isReverse: false,
     shouldAttachScroll: true,
-    basedElement: null
-  };
+    basedElement: null,
+    loaded: false
+  }
 
   constructor(props) {
     super(props);
@@ -35,13 +38,33 @@ export default class InfiniteScroll extends Component {
     this.scrollListener = this.scrollListener.bind(this);
   }
 
+  state = { initialLoad: true, scrollInitPosition: false }
+
   componentDidMount() {
     this.pageLoaded = this.props.pageStart;
-    this.attachScrollListener();
+
+    if (this.props.loaded) {
+      this.attachScrollListener();
+    }
   }
 
-  componentDidUpdate() {
-    this.attachScrollListener();
+  componentWillReceiveProps(newProps) {
+    const { initialLoad } = newProps;
+    const { basedElement } = this.props;
+
+    if (this.state.initialLoad && !initialLoad) {
+      this.setState({ initialLoad });
+    }
+
+    this.setState({ scrollPosition: basedElement && basedElement.scrollHeight })
+  }
+
+  componentDidUpdate(oldProps, oldState) {
+    if (!_.isEqual(this.props, oldProps)) {
+      if (this.props.loaded) {
+        this.attachScrollListener();
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -62,7 +85,17 @@ export default class InfiniteScroll extends Component {
     scrollEl.addEventListener('scroll', this.scrollListener);
     scrollEl.addEventListener('resize', this.scrollListener);
 
-    if (this.props.initialLoad) {
+    if (this.state.initialLoad) {
+    } else {
+      if (!this.state.scrollInitPosition) {
+        const el = this.props.basedElement;
+        el.scrollTop = el.scrollHeight;
+
+        this.setState({ scrollInitPosition: true });
+      }
+
+      const el = this.props.basedElement;
+      el.scrollTop = el.scrollHeight - this.state.scrollPosition - 1;
       this.scrollListener();
     }
   }

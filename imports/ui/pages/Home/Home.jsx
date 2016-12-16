@@ -1,6 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import PageHeader from '../../components/PageHeader/PageHeader.js';
 import MessagesList from '../../components/Messages/MessagesList.jsx';
+import messagesStore from '../../stores/messages';
 import _ from 'lodash';
 import {
   insert,
@@ -8,12 +9,13 @@ import {
   updateText
 } from '../../../api/messages/methods.js';
 
-const { array, number } = PropTypes;
+const { array, number, bool } = PropTypes;
 
 export default class Home extends Component {
   static propTypes = {
     messages: array,
-    limitMsgCount: number
+    defaultMsgLimit: number,
+    messagesLoaded: bool
   };
 
   constructor(props) {
@@ -25,7 +27,8 @@ export default class Home extends Component {
 
   state = {
     messageText: '',
-    loading: false
+    loading: false,
+    initLoading: true
   }
 
   componentWillReceiveProps(newProps) {
@@ -39,7 +42,8 @@ export default class Home extends Component {
   }
 
   componentWillUnmount() {
-    Session.set('messagesCount', this.props.limitMsgCount);
+    Session.set('messagesLimit', this.props.defaultMsgLimit);
+    messagesStore.reset();
     $('.messages-list').off();
   }
 
@@ -72,7 +76,7 @@ export default class Home extends Component {
   }
 
   render() {
-    const { messages } = this.props;
+    const { messages, messagesLoaded } = this.props;
     const { messageText } = this;
 
     return (
@@ -82,6 +86,7 @@ export default class Home extends Component {
         <MessagesList
           messages={messages}
           ref="msgList"
+          loaded={messagesLoaded}
         />
 
         <div className="sending-block-wrapper">
