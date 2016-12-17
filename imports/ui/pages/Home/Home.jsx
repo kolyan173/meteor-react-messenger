@@ -15,7 +15,8 @@ export default class Home extends Component {
   static propTypes = {
     messages: array,
     defaultMsgLimit: number,
-    messagesLoaded: bool
+    messagesLoaded: bool,
+    hasMessagesMore: bool
   };
 
   constructor(props) {
@@ -28,12 +29,13 @@ export default class Home extends Component {
   state = {
     messageText: '',
     loading: false,
-    initLoading: true
+    initLoading: true,
+    sendMessage: false
   }
 
   componentWillReceiveProps(newProps) {
     const { messages } = newProps;
-    console.log('Messages', messages.length);
+
     if (!_.isEqual(messages, this.props.messages)) {
       if (this.state.loading) {
         this.setState({ loading: false });
@@ -42,21 +44,19 @@ export default class Home extends Component {
   }
 
   componentWillUnmount() {
-    Session.set('messagesLimit', this.props.defaultMsgLimit);
     messagesStore.reset();
     $('.messages-list').off();
   }
 
   handleSendMessage = (e) => {
-    this.setState({ shake: true });
-
-    setTimeout(() => {
-      this.setState({ shake: false });
-    }, 1e3);
-
     const content = this.refs.msgText.value;
 
-    if (!content) { return; }
+    if (!content) { return };
+
+    this.setState({ shake: true, sendMessage: true });
+    setTimeout(() => {
+      this.setState({ shake: false, sendMessage: false });
+    }, 1e3);
 
     const user = Meteor.user();
 
@@ -76,9 +76,13 @@ export default class Home extends Component {
   }
 
   render() {
-    const { messages, messagesLoaded } = this.props;
+    const {
+      messages,
+      messagesLoaded,
+      hasMessagesMore
+    } = this.props;
     const { messageText } = this;
-
+    console.log('render: Home');
     return (
       <div className="messages">
         <PageHeader title="Messenger"/>
@@ -87,6 +91,8 @@ export default class Home extends Component {
           messages={messages}
           ref="msgList"
           loaded={messagesLoaded}
+          sendMessage={this.state.sendMessage}
+          hasMessagesMore={hasMessagesMore}
         />
 
         <div className="sending-block-wrapper">

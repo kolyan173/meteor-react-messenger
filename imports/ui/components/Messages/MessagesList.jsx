@@ -4,41 +4,81 @@ import MessageItem from './MessageItem.jsx';
 import InfiniteScroll from '../InfiniteScroll/InfiniteScroll.jsx';
 import messagesStore from '../../stores/messages';
 
-const { array } = PropTypes;
+const { array, bool } = PropTypes;
 
 export default class MessagesList extends Component {
   static propTypes = {
-    messages: array
+    messages: array,
+    sendMessage: bool,
+    loaded: bool,
+    hasMessagesMore: bool
   }
 
   constructor(props) {
     super(props);
   }
 
-  state = { shouldAttachInfiniteScroll: false }
+  state = {
+    shouldAttachInfiniteScroll: false,
+    blindPoint: false
+  }
 
-  componentWillReceiveProps(newProps) {
-    const { messages } = this.props;
+  lastMessage = []
 
-    if (messages.length !== newProps.messages.length) {
-      this.setState({ shouldAttachInfiniteScroll: true });
+  componentWillReceiveProps(newProps, newState) {
+    if (newProps.loaded) {
+      if (!this.state.shouldAttachInfiniteScroll) {
+        this.setState({ shouldAttachInfiniteScroll: true });
+      }
+
+      const lastMessage = _.last(newProps.messages);
+      const isNewMessage = _.result(lastMessage, '_id') !== _.result(this.lastMessage, '_id');
+
+      const newMessageAuthorId = _.result(lastMessage, 'authorId');
+
+      if (isNewMessage && this.state.blindPoint) {
+        if (Meteor.userId() !== newMessageAuthorId) {
+          if (this.state.blindPoint && !this.state.messageNotify) {
+            // messagesStore.loadMore(1);
+            this.setState({ messageNotify: true });
+          }
+        }
+      }
+
+      this.lastMessage = _.last(newProps.messages);
     }
   }
 
   shouldComponentUpdate(newProps, newState) {
-    return true;
+    return this.props.loaded || newProps.loaded;
     // return ! (_.isEqual(this.props, newProps) || _.isEqual(this.state, newState));
   }
 
-  handleInfiniteLoad = (pageNumber) => {
-    const el = this.refs.msgList;
-
+  handleInfiniteLoad = () => {
     this.setState({ shouldAttachInfiniteScroll: false });
-
     messagesStore.loadMore();
   }
 
+  handleBlindPoint = (value) => {
+    const state = {};
+
+    if (!value && this.state.messageNotify) {
+      state.messageNotify = false;
+    }
+
+    state.blindPoint = value;
+
+    this.setState(state);
+  }
+
   render() {
+    const {
+      hasMessagesMore,
+      loaded,
+      sendMessage,
+      messages
+    } = this.props;
+
     return (
       <div className="messages-list" ref="msgList">
         <InfiniteScroll
@@ -46,20 +86,28 @@ export default class MessagesList extends Component {
           loadMore={this.handleInfiniteLoad}
           basedElement={this.refs.msgList}
           isReverse
-          initialLoad={!this.props.loaded}
-          loaded={this.props.loaded}
+          // initialLoad={!loaded}
+          loaded={loaded}
+          hasMore={hasMessagesMore}
+          detectBlindPoint={this.handleBlindPoint}
+          threshold={100}
         >
-          {this.props.messages.map((item, index) => (
+          {messages.map((item, index) => (
             <MessageItem
               key={index}
               authorId={item.authorId}
               time={item.createdAt}
               author={item.authorUsername}
               content={item.text}
-              threshold={10}
             />
           ))}
         </InfiniteScroll>
+
+        {this.state.messageNotify &&
+          <div className="message-notification-wrapper">
+            <div className="message-notification fadein">New message</div>
+          </div>
+        }
       </div>
     );
   }

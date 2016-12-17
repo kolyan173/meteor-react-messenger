@@ -16,7 +16,8 @@ export default class InfiniteScroll extends Component {
     shouldAttachScroll: PropTypes.bool,
     children: PropTypes.array.isRequired,
     basedElement: PropTypes.object,
-    loaded: PropTypes.bool
+    loaded: PropTypes.bool,
+    detectBlindPoint: PropTypes.func
   }
 
   static defaultProps = {
@@ -38,32 +39,107 @@ export default class InfiniteScroll extends Component {
     this.scrollListener = this.scrollListener.bind(this);
   }
 
-  state = { initialLoad: true, scrollInitPosition: false }
+  state = {
+    initialLoad: false,
+    scrollInitPosition: false,
+    scrollBottomPosition: null,
+    loading: false,
+    inBlindPoint: false,
+    scrollAttached: false
+  }
 
   componentDidMount() {
     this.pageLoaded = this.props.pageStart;
 
     if (this.props.loaded) {
+      // may be never happen
+      // debugger;
+      this.scrollTop();
       this.attachScrollListener();
     }
   }
 
-  componentWillReceiveProps(newProps) {
+  componentWillReceiveProps(newProps, newState) {
     const { initialLoad } = newProps;
-    const { basedElement } = this.props;
+    const { basedElement, scrollTop, loaded, children } = this.props;
+    const childrenUpdated = !_.isEqual(newProps.children, children);
+    const isLoaded = !loaded && newProps.loaded;
+    // if (newProps.loaded && this.state.loading) {
+    //   this.setState({ loading: false });
+    //   setTimeout(() => {
+    //     this.scrollTop(null);
+    //   })
+    // }
+    // debugger;
+    if (isLoaded) {
+      if (!this.state.initialLoad) {
+        this.setState({ initialLoad: true });
+      } else {
+        if (this.state.loading) {
+          // debugger;
+          this.setState({ loading: false });
+        }
 
-    if (this.state.initialLoad && !initialLoad) {
-      this.setState({ initialLoad });
+        if (childrenUpdated) {
+          const { scrollHeight, clientHeight, scrollTop } = basedElement;
+          // debugger
+          const scrollBottom = scrollHeight - clientHeight - scrollTop;
+          console.log('childrenUpdated',  scrollBottom);
+          this.setState({ scrollBottomPosition: scrollBottom })
+        }
+      }
     }
 
-    this.setState({ scrollPosition: basedElement && basedElement.scrollHeight })
+    // if (!loaded && newProps.loaded) {
+    //   if (scrollTop) {
+    //     console.log('Sended message');
+    //   } else {
+    //     console.log('loading or get MSG');
+    //   }
+    // }
+
+    const startLoading = this.props.loaded && !newProps.loaded;
+
+    if (startLoading) {
+      // console.log('scrollBottomPosition', basedElement && basedElement.scrollHeight);
+      if (basedElement) {
+        // this.setState({ scrollBottomPosition: basedElement.scrollTop + basedElement.clientHeight })
+      }
+    }
   }
 
   componentDidUpdate(oldProps, oldState) {
-    if (!_.isEqual(this.props, oldProps)) {
+    const initLoading = !oldState.initialLoad && this.state.initialLoad;
+    const childrenUpdated = !_.isEqual(oldProps.children, this.props.children);
+
+    if (initLoading) {
       if (this.props.loaded) {
-        this.attachScrollListener();
+        this.scrollTop(null, true);
       }
+    }
+
+    if (!_.isEqual(this.props, oldProps)) {
+      if (childrenUpdated) {
+        const lastMsg = _.last(this.props.children);
+        const lastMsgOld = _.last(oldProps.children);
+        const mine = _.result(lastMsg, 'props.authorId') === Meteor.userId();
+        const isLastMessageUpdated = _.result(lastMsg, '_id') !== _.result(lastMsgOld, '_id');
+
+        if (mine && isLastMessageUpdated) {
+          this.scrollTop(null, true);
+        }
+      }
+    }
+
+    const isLoadingFinished = !this.state.loading && oldState.loading;
+
+    if (isLoadingFinished) {
+      console.log('isLoadingFinished', this.state.scrollBottomPosition);
+      this.scrollTop(this.state.scrollBottomPosition);
+    }
+
+    if (!oldProps.loaded && this.props.loaded) {
+      this.attachScrollListener();
     }
   }
 
@@ -75,27 +151,35 @@ export default class InfiniteScroll extends Component {
     this._defaultLoader = loader;
   }
 
-  attachScrollListener() {
-    if (!this.props.hasMore || !this.props.shouldAttachScroll) {
-      return;
-    }
+  scrollTop(scrollBottom=this.state.scrollBottomPosition, instant) {
+    // debugger;
+    console.log('scrollBottomPosition', scrollBottom);
+    const el = this.props.basedElement;
+    const { scrollHeight, clientHeight } = el;
 
+    if (!el) { return; }
+
+    const scrollTop = scrollHeight - clientHeight - scrollBottom;
+
+    if (instant) {
+      el.scrollTop = scrollTop;
+    } else {
+      setTimeout(() => {
+        el.scrollTop = scrollTop;
+      }, 5e2);
+    }
+  }
+
+  attachScrollListener() {
+    if (!this.props.hasMore || !this.props.shouldAttachScroll || this.state.scrollAttached) { return;}
+
+    this.setState({ scrollAttached: true });
     let scrollEl = this.props.useWindow ? window : ReactDOM.findDOMNode(this).parentNode;
 
     scrollEl.addEventListener('scroll', this.scrollListener);
     scrollEl.addEventListener('resize', this.scrollListener);
 
-    if (this.state.initialLoad) {
-    } else {
-      if (!this.state.scrollInitPosition) {
-        const el = this.props.basedElement;
-        el.scrollTop = el.scrollHeight;
-
-        this.setState({ scrollInitPosition: true });
-      }
-
-      const el = this.props.basedElement;
-      el.scrollTop = el.scrollHeight - this.state.scrollPosition - 1;
+    if (!this.state.initialLoad) {
       this.scrollListener();
     }
   }
@@ -109,6 +193,10 @@ export default class InfiniteScroll extends Component {
 
     scrollEl.removeEventListener('scroll', this.scrollListener);
     scrollEl.removeEventListener('resize', this.scrollListener);
+
+    scrollEl.addEventListener('scroll', this.detectBlindPoint);
+
+    this.setState({ scrollAttached: false });
   }
 
   scrollListener() {
@@ -135,17 +223,37 @@ export default class InfiniteScroll extends Component {
       }
     }
 
+    this.detectBlindPoint();
+
     if (offset < Number(this.props.threshold)) {
+      console.log('LOADMORE', offset, el.scrollHeight, el.scrollTop, el.clientHeight);
       this.detachScrollListener();
 
       if (typeof this.props.loadMore === 'function') {
-        this.props.loadMore(this.pageLoaded += 1);
+        this.setState({ loading: true });
+        this.props.loadMore();
       }
     }
   }
 
   calculateTopPosition(el) {
     return el ? el.offsetTop + this.calculateTopPosition(el.offsetParent) : null;
+  }
+
+  detectBlindPoint = () => {
+    const el = this.props.basedElement;
+
+    if (el.scrollTop < el.scrollHeight - el.clientHeight - 70) {
+      if (!this.state.inBlindPoint) {
+        this.setState({ inBlindPoint: true });
+        this.props.detectBlindPoint(true);
+      }
+    } else {
+      if (this.state.inBlindPoint) {
+        this.setState({ inBlindPoint: false });
+        this.props.detectBlindPoint(false);
+      }
+    }
   }
 
   render() {

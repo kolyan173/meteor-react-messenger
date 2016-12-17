@@ -5,16 +5,22 @@ Meteor.smartPublish('messages', (locationDataList) => {
   return locationDataList.map((data) => {
     const { location, start, finish, limit } = data;
     const selector = { authorLocation: location };
+    const query = {
+      sort: { createdAt: -1 }
+    };
 
     if (start) {
-      selector.createdAt = { $gt: start, $lt: finish };
+      selector.createdAt = { $gte: start };
     }
 
-    const cursor = Messages.find(selector, {
-      limit,
-      sort: { createdAt: -1 }
-    });
+    if (finish) {
+      selector.createdAt['$lte'] = finish;
+    }
 
-    return cursor;
+    if (limit) {
+      query.limit = limit;
+    }
+
+    return  Messages.find(selector, query);
   });
 });

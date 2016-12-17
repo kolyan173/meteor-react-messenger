@@ -16,6 +16,7 @@ export default createContainer(() => {
   const loadedMsgCount = Messages.find().count();
 
   let messageCursor;
+  let hasMessagesMore = true;
 
   Session.setDefault('messagesLimit', messagesStore.getDefaultLimit());
 
@@ -30,42 +31,47 @@ export default createContainer(() => {
 
       messagesStore.unloadedLocationDataList = messagesStore.unloadedLocationDataList.concat(oldLocations, [extLocation]);
       messagesStore.chargeNextLocation();
+      console.log('initLoading', messagesStore.loadedLocationDataList);
       messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
     }
   } else {
     const messagesLimit = Session.get('messagesLimit');
+    const limit = messagesStore.getRestCount(loadedMsgCount);
     const shouldLoadMore = messagesLimit > loadedMsgCount;
-    const currLocationFullLoaded = messagesStore.processLocationData.limit >= messagesLimit;
+    const currLocationReachedLimit = messagesStore.processLocationData.limit >= limit;
+    const currLocationGetNewData = loadedMsgCount > messagesStore.loadedTotal;
+    const currLocationExpended = messagesStore.loaded ? false : (!currLocationGetNewData || currLocationReachedLimit);
     const nextLocation = _.last(messagesStore.unloadedLocationDataList);
-    const noDataMore = currLocationFullLoaded && !nextLocation;
-    const currLocationEmpty = messagesStore.loadedTotal === loadedMsgCount;
+    const noDataMore = currLocationExpended && !nextLocation;
+
+    console.log('createContainer', loadedMsgCount, messagesLimit, messagesStore.loadedLocationDataList);
 
     if (!noDataMore && shouldLoadMore) {
-      const limit = messagesStore.getRestCount(loadedMsgCount);
-      const canLoadMore = !currLocationFullLoaded || nextLocation;
+      const shouldRechargeLoc = currLocationExpended && currLocationReachedLimit;
 
-      if (canLoadMore) {
-        const shouldRechargeLoc = currLocationEmpty || currLocationFullLoaded;
+      if (currLocationExpended && nextLocation) {
+        const afterNextLoc = _(messagesStore.unloadedLocationDataList).initial().last();
+        const extLocation = Object.assign(nextLocation, {
+          limit,
+          start: afterNextLoc ? afterNextLoc.finish : moment(user.createdAt).valueOf()
+        });
 
-        if (shouldRechargeLoc && nextLocation) {
-          const afterNextLoc = _(messagesStore.unloadedLocationDataList).initial().last();
-          const extLocation = Object.assign(nextLocation, {
-            limit,
-            start: afterNextLoc ? afterNextLoc.finish : moment(user.createdAt).valueOf()
-          });
-
-          messagesStore.chargeNextLocation();
-        } else {
-          messagesStore.upLimit(loadedMsgCount);
-        }
-
-        messagesStore.loaded = false;
-        messagesStore.loadedTotal = loadedMsgCount;
-
-        messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
+        messagesStore.chargeNextLocation();
+      } else {
+        messagesStore.upLimit(loadedMsgCount);
       }
+
+      messagesStore.loaded = false;
+      messagesStore.loadedTotal = loadedMsgCount;
+
+      messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
     } else {
       messagesStore.loaded = true;
+
+      if (noDataMore) {
+        debugger;
+        hasMessagesMore = false;
+      }
     }
   }
 
@@ -73,10 +79,9 @@ export default createContainer(() => {
     messagesStore.loadedTotal = loadedMsgCount;
     messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
   }
-
-  messagesStore.limit = Session.get('messagesLimit');
-
+  console.log('hasMessagesMore', hasMessagesMore);
   return {
+    hasMessagesMore,
     loading: !(messageCursor && messageCursor.ready()),
     messages: Messages.find({}, {sort: { createdAt: 1 }}).fetch(),
     limitMsgCount: Session.get('messagesLimit'),
