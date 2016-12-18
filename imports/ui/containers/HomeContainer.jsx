@@ -14,6 +14,7 @@ export default createContainer(() => {
   const user = Meteor.user();
   const { location, oldLocations } = user.profile;
   const loadedMsgCount = Messages.find().count();
+  const { getRestCount, prevLimit } = messagesStore;
 
   let messageCursor;
   let hasMessagesMore = true;
@@ -31,20 +32,18 @@ export default createContainer(() => {
 
       messagesStore.unloadedLocationDataList = messagesStore.unloadedLocationDataList.concat(oldLocations, [extLocation]);
       messagesStore.chargeNextLocation();
-      console.log('initLoading', messagesStore.loadedLocationDataList);
       messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
     }
   } else {
     const messagesLimit = Session.get('messagesLimit');
     const limit = messagesStore.getRestCount(loadedMsgCount);
+    const forceLoadMore = messagesLimit > prevLimit;
     const shouldLoadMore = messagesLimit > loadedMsgCount;
     const currLocationReachedLimit = messagesStore.processLocationData.limit >= limit;
-    const currLocationGetNewData = loadedMsgCount > messagesStore.loadedTotal;
-    const currLocationExpended = messagesStore.loaded ? false : (!currLocationGetNewData || currLocationReachedLimit);
+    const currLocationLoadedNewData = forceLoadMore || (loadedMsgCount > messagesStore.loadedTotal);
+    const currLocationExpended = !currLocationLoadedNewData || currLocationReachedLimit;
     const nextLocation = _.last(messagesStore.unloadedLocationDataList);
     const noDataMore = currLocationExpended && !nextLocation;
-
-    console.log('createContainer', loadedMsgCount, messagesLimit, messagesStore.loadedLocationDataList);
 
     if (!noDataMore && shouldLoadMore) {
       const shouldRechargeLoc = currLocationExpended && currLocationReachedLimit;
@@ -69,7 +68,6 @@ export default createContainer(() => {
       messagesStore.loaded = true;
 
       if (noDataMore) {
-        debugger;
         hasMessagesMore = false;
       }
     }
@@ -79,7 +77,7 @@ export default createContainer(() => {
     messagesStore.loadedTotal = loadedMsgCount;
     messageCursor = Meteor.subscribe('messages', messagesStore.loadedLocationDataList);
   }
-  console.log('hasMessagesMore', hasMessagesMore);
+
   return {
     hasMessagesMore,
     loading: !(messageCursor && messageCursor.ready()),

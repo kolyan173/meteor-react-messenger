@@ -1,5 +1,9 @@
 class MessagesStore {
   constructor() {
+    this.init();
+  }
+
+  init() {
     this.limit = this.getDefaultLimit();
     this.loading = true;
     this.initLoading = true;
@@ -9,13 +13,16 @@ class MessagesStore {
     this.loadedTotal = 0;
     this.loaded = false;
     this.processLocationData = null;
+    this.prevLimit = this.getDefaultLimit();
 
-    Session.set('messagesLimit', this.getDefaultLimit());
+    Session.set('messagesLimit', this.prevLimit);
   }
 
   loadMore(delta=this.getDefaultLimit()) {
-    console.log('loadMore', delta);
     const messagesLimit = Session.get('messagesLimit');
+
+    this.prevLimit = messagesLimit;
+
     return Session.set('messagesLimit', messagesLimit + delta);
   }
 
@@ -56,16 +63,7 @@ class MessagesStore {
   }
 
   reset() {
-    this.loading = true;
-    this.initLoading = true;
-    this.lastLoadedLocation = null;
-    this.loadedLocationDataList = [];
-    this.unloadedLocationDataList = [];
-    this.loaded = false;
-    this.processLocationData = null;
-    this.loadedTotal = null;
-
-    Session.set('messagesLimit', this.getDefaultLimit());
+    this.init();
   }
 }
 

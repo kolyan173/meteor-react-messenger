@@ -39,7 +39,6 @@ export default class MessagesList extends Component {
       if (isNewMessage && this.state.blindPoint) {
         if (Meteor.userId() !== newMessageAuthorId) {
           if (this.state.blindPoint && !this.state.messageNotify) {
-            // messagesStore.loadMore(1);
             this.setState({ messageNotify: true });
           }
         }
@@ -51,7 +50,6 @@ export default class MessagesList extends Component {
 
   shouldComponentUpdate(newProps, newState) {
     return this.props.loaded || newProps.loaded;
-    // return ! (_.isEqual(this.props, newProps) || _.isEqual(this.state, newState));
   }
 
   handleInfiniteLoad = () => {
@@ -86,7 +84,6 @@ export default class MessagesList extends Component {
           loadMore={this.handleInfiniteLoad}
           basedElement={this.refs.msgList}
           isReverse
-          // initialLoad={!loaded}
           loaded={loaded}
           hasMore={hasMessagesMore}
           detectBlindPoint={this.handleBlindPoint}
@@ -99,6 +96,7 @@ export default class MessagesList extends Component {
               time={item.createdAt}
               author={item.authorUsername}
               content={item.text}
+              id={item._id}
             />
           ))}
         </InfiniteScroll>

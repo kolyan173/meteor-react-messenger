@@ -104,7 +104,7 @@ export default class InfiniteScroll extends Component {
         const lastMsg = _.last(this.props.children);
         const lastMsgOld = _.last(oldProps.children);
         const mine = _.result(lastMsg, 'props.authorId') === Meteor.userId();
-        const isLastMessageUpdated = _.result(lastMsg, '_id') !== _.result(lastMsgOld, '_id');
+        const isLastMessageUpdated = _.result(lastMsg, 'props.id') !== _.result(lastMsgOld, 'props.id');
 
         if (mine && isLastMessageUpdated) {
           this.scrollTop(null, true);
