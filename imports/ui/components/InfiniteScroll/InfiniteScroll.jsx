@@ -53,7 +53,7 @@ export default class InfiniteScroll extends Component {
 
     if (this.props.loaded) {
       // may be never happen
-      // debugger;
+      debugger;
       this.scrollTop();
       this.attachScrollListener();
     }
@@ -64,47 +64,28 @@ export default class InfiniteScroll extends Component {
     const { basedElement, scrollTop, loaded, children } = this.props;
     const childrenUpdated = !_.isEqual(newProps.children, children);
     const isLoaded = !loaded && newProps.loaded;
-    // if (newProps.loaded && this.state.loading) {
-    //   this.setState({ loading: false });
-    //   setTimeout(() => {
-    //     this.scrollTop(null);
-    //   })
-    // }
-    // debugger;
+
     if (isLoaded) {
       if (!this.state.initialLoad) {
         this.setState({ initialLoad: true });
       } else {
         if (this.state.loading) {
-          // debugger;
           this.setState({ loading: false });
         }
 
         if (childrenUpdated) {
-          const { scrollHeight, clientHeight, scrollTop } = basedElement;
-          // debugger
-          const scrollBottom = scrollHeight - clientHeight - scrollTop;
-          console.log('childrenUpdated',  scrollBottom);
-          this.setState({ scrollBottomPosition: scrollBottom })
         }
       }
     }
+  }
 
-    // if (!loaded && newProps.loaded) {
-    //   if (scrollTop) {
-    //     console.log('Sended message');
-    //   } else {
-    //     console.log('loading or get MSG');
-    //   }
-    // }
+  componentWillUpdate(newProps, newState) {
+    const { children, basedElement } = this.props;
+    const childrenUpdated = !_.isEqual(newProps.children, children);
 
-    const startLoading = this.props.loaded && !newProps.loaded;
-
-    if (startLoading) {
-      // console.log('scrollBottomPosition', basedElement && basedElement.scrollHeight);
-      if (basedElement) {
-        // this.setState({ scrollBottomPosition: basedElement.scrollTop + basedElement.clientHeight })
-      }
+    if (basedElement && childrenUpdated) {
+      this.scrollHeight = basedElement.scrollHeight;
+      this.scrollTopPos = basedElement.scrollTop;
     }
   }
 
@@ -134,8 +115,8 @@ export default class InfiniteScroll extends Component {
     const isLoadingFinished = !this.state.loading && oldState.loading;
 
     if (isLoadingFinished) {
-      console.log('isLoadingFinished', this.state.scrollBottomPosition);
-      this.scrollTop(this.state.scrollBottomPosition);
+      const { basedElement } = this.props;
+      basedElement.scrollTop = this.scrollTopPos + (basedElement.scrollHeight - this.scrollHeight);
     }
 
     if (!oldProps.loaded && this.props.loaded) {
@@ -152,8 +133,6 @@ export default class InfiniteScroll extends Component {
   }
 
   scrollTop(scrollBottom=this.state.scrollBottomPosition, instant) {
-    // debugger;
-    console.log('scrollBottomPosition', scrollBottom);
     const el = this.props.basedElement;
     const { scrollHeight, clientHeight } = el;
 
@@ -226,7 +205,6 @@ export default class InfiniteScroll extends Component {
     this.detectBlindPoint();
 
     if (offset < Number(this.props.threshold)) {
-      console.log('LOADMORE', offset, el.scrollHeight, el.scrollTop, el.clientHeight);
       this.detachScrollListener();
 
       if (typeof this.props.loadMore === 'function') {
